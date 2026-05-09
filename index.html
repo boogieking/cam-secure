@@ -737,9 +737,27 @@ function initPeer() {
       currentCall = call;
       setStatus('live');
       log('camLog', 'Viewer connected — streaming live', 'ok');
+
+      // Play incoming audio (viewer's voice) through speaker
+      call.on('stream', (remoteStream) => {
+        let talkAudio = document.getElementById('talkAudio');
+        if (!talkAudio) {
+          talkAudio = document.createElement('audio');
+          talkAudio.id = 'talkAudio';
+          talkAudio.autoplay = true;
+          talkAudio.setAttribute('playsinline', '');
+          document.body.appendChild(talkAudio);
+        }
+        talkAudio.srcObject = remoteStream;
+        talkAudio.play().catch(e => log('camLog', 'Audio play error: ' + e.message, 'err'));
+        log('camLog', 'Incoming audio ready', 'ok');
+      });
+
       call.on('close', () => {
         setStatus('');
         log('camLog', 'Viewer disconnected', '');
+        const talkAudio = document.getElementById('talkAudio');
+        if (talkAudio) talkAudio.srcObject = null;
       });
     } else {
       log('camLog', 'Call received but camera not started yet', 'err');
