@@ -530,6 +530,12 @@
     <button class="btn full" id="flipBtn" onclick="flipCamera()">⟳ FLIP CAMERA</button>
   </div>
 
+  <div class="section-head">LOCAL RECORDING</div>
+  <div class="controls">
+    <button class="btn success" id="startCamRecBtn" onclick="startCamRecording()" disabled>⏺ RECORD</button>
+    <button class="btn danger" id="stopCamRecBtn" onclick="stopCamRecording()" disabled>■ STOP REC</button>
+  </div>
+
   <div class="section-head">ACTIVITY LOG</div>
   <div class="log" id="camLog">
     <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to start...</span></div>
@@ -584,6 +590,18 @@
     <button class="btn full danger" id="disconnectBtn" onclick="disconnectViewer()" disabled>✕ DISCONNECT</button>
   </div>
 
+  <div class="section-head">TALK TO CAMERA</div>
+  <div class="info-card full" style="text-align:center;">
+    <div class="info-label">Hold to talk — releases when you let go</div>
+    <button id="talkBtn" 
+      onmousedown="startTalk()" onmouseup="stopTalk()" 
+      ontouchstart="startTalk(event)" ontouchend="stopTalk()"
+      disabled
+      style="width:100%;padding:20px;margin-top:8px;background:rgba(57,255,106,0.1);border:2px solid rgba(57,255,106,0.4);border-radius:8px;color:#39ff6a;font-family:'Share Tech Mono',monospace;font-size:0.9rem;letter-spacing:2px;cursor:pointer;transition:all 0.1s;">
+      🎤 HOLD TO TALK
+    </button>
+  </div>
+
   <div class="section-head">ACTIVITY LOG</div>
   <div class="log" id="viewerLog">
     <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to connect...</span></div>
@@ -607,6 +625,7 @@ let facingMode = 'environment';
 let clips = [];
 let motionInterval, motionActive = false;
 let prevImageData = null;
+let talkStream = null;
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function ts() {
@@ -733,6 +752,45 @@ function initPeer() {
   });
 }
 
+// ── Camera-side recording ──────────────────────────────────────────────────
+let camRecorder, camRecChunks = [], camRecStartTime;
+
+function startCamRecording() {
+  if (!localStream) { toast('Start camera first'); return; }
+  camRecChunks = [];
+  camRecStartTime = Date.now();
+  camRecorder = new MediaRecorder(localStream, {
+    mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9' : 'video/webm'
+  });
+  camRecorder.ondataavailable = e => { if (e.data.size > 0) camRecChunks.push(e.data); };
+  camRecorder.onstop = saveCamClip;
+  camRecorder.start(1000);
+  document.getElementById('recBadge').classList.add('show');
+  document.getElementById('startCamRecBtn').disabled = true;
+  document.getElementById('stopCamRecBtn').disabled = false;
+  log('camLog', 'Local recording started', 'ok');
+  toast('⏺ Recording locally...');
+}
+
+function stopCamRecording() {
+  if (camRecorder && camRecorder.state !== 'inactive') camRecorder.stop();
+  document.getElementById('recBadge').classList.remove('show');
+  document.getElementById('startCamRecBtn').disabled = false;
+  document.getElementById('stopCamRecBtn').disabled = true;
+}
+
+function saveCamClip() {
+  const blob = new Blob(camRecChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const duration = Math.round((Date.now() - camRecStartTime) / 1000);
+  const name = 'clip_' + nowStr() + '.webm';
+  clips.unshift({ name, url, duration, blob });
+  renderClips();
+  log('camLog', 'Clip ready — go to CLIPS tab to save', 'ok');
+  toast('💾 Clip ready in CLIPS tab!');
+}
+
 // ── Camera (sender) ────────────────────────────────────────────────────────
 async function startCamera() {
   try {
@@ -745,6 +803,7 @@ async function startCamera() {
     document.getElementById('startCamBtn').disabled = true;
     document.getElementById('stopCamBtn').disabled = false;
     document.getElementById('flipBtn').disabled = false;
+    document.getElementById('startCamRecBtn').disabled = false;
     log('camLog', 'Camera started (' + facingMode + ')', 'ok');
     toast('📷 Camera active');
   } catch (e) {
@@ -762,6 +821,8 @@ function stopCamera() {
   if (currentCall) { currentCall.close(); currentCall = null; }
   document.getElementById('startCamBtn').disabled = false;
   document.getElementById('stopCamBtn').disabled = true;
+  document.getElementById('startCamRecBtn').disabled = true;
+  document.getElementById('stopCamRecBtn').disabled = true;
   setStatus('');
   log('camLog', 'Camera stopped', '');
 }
@@ -769,6 +830,47 @@ function stopCamera() {
 async function flipCamera() {
   facingMode = facingMode === 'environment' ? 'user' : 'environment';
   if (localStream) await startCamera();
+}
+
+// ── Walkie-talkie ──────────────────────────────────────────────────────────
+function startTalk(e) {
+  if (e) e.preventDefault();
+  const btn = document.getElementById('talkBtn');
+  btn.style.background = 'rgba(57,255,106,0.4)';
+  btn.style.borderColor = '#39ff6a';
+  btn.textContent = '🎤 TALKING...';
+
+  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(stream => {
+      talkStream = stream;
+      // Replace audio track in current call with viewer's mic
+      if (currentCall && currentCall.peerConnection) {
+        const sender = currentCall.peerConnection.getSenders()
+          .find(s => s.track && s.track.kind === 'audio');
+        if (sender) {
+          sender.replaceTrack(stream.getAudioTracks()[0]);
+          log('viewerLog', 'Talking to camera...', 'ok');
+        }
+      }
+    })
+    .catch(e => {
+      log('viewerLog', 'Mic error: ' + e.message, 'err');
+      toast('❌ Mic access denied');
+    });
+}
+
+function stopTalk(e) {
+  if (e) e.preventDefault();
+  const btn = document.getElementById('talkBtn');
+  btn.style.background = 'rgba(57,255,106,0.1)';
+  btn.style.borderColor = 'rgba(57,255,106,0.4)';
+  btn.textContent = '🎤 HOLD TO TALK';
+
+  if (talkStream) {
+    talkStream.getTracks().forEach(t => t.stop());
+    talkStream = null;
+    log('viewerLog', 'Talk released', '');
+  }
 }
 
 // ── Viewer (receiver) ──────────────────────────────────────────────────────
@@ -832,6 +934,7 @@ function connectToCamera() {
         toast('✅ Connected — click ▶ START VIEWING');
         document.getElementById('startRecBtn').disabled = false;
         document.getElementById('disconnectBtn').disabled = false;
+        document.getElementById('talkBtn').disabled = false;
         startMotionDetection(remoteStream);
       });
 
@@ -870,9 +973,11 @@ function disconnectViewer() {
   document.getElementById('remoteVideo').srcObject = null;
   stopMotionDetection();
   stopRecording();
+  stopTalk();
   setStatus('');
   document.getElementById('startRecBtn').disabled = true;
   document.getElementById('disconnectBtn').disabled = true;
+  document.getElementById('talkBtn').disabled = true;
   log('viewerLog', 'Disconnected', '');
 }
 
