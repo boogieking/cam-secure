@@ -738,20 +738,32 @@ function initPeer() {
       setStatus('live');
       log('camLog', 'Viewer connected — streaming live', 'ok');
 
-      // Play incoming audio (viewer's voice) through speaker
-      call.on('stream', (remoteStream) => {
-        let talkAudio = document.getElementById('talkAudio');
-        if (!talkAudio) {
-          talkAudio = document.createElement('audio');
-          talkAudio.id = 'talkAudio';
-          talkAudio.autoplay = true;
-          talkAudio.setAttribute('playsinline', '');
-          document.body.appendChild(talkAudio);
+      // Use ontrack to catch incoming audio from viewer
+      setTimeout(() => {
+        const pc = call.peerConnection || call._pc;
+        if (pc) {
+          pc.ontrack = (event) => {
+            log('camLog', 'Track received: ' + event.track.kind, 'ok');
+            if (event.track.kind === 'audio') {
+              let talkAudio = document.getElementById('talkAudio');
+              if (!talkAudio) {
+                talkAudio = document.createElement('audio');
+                talkAudio.id = 'talkAudio';
+                talkAudio.autoplay = true;
+                talkAudio.setAttribute('playsinline', '');
+                document.body.appendChild(talkAudio);
+              }
+              const audioStream = new MediaStream([event.track]);
+              talkAudio.srcObject = audioStream;
+              talkAudio.play().catch(e => log('camLog', 'Audio play: ' + e.message, 'err'));
+              log('camLog', 'Incoming audio ready ✓', 'ok');
+            }
+          };
+          log('camLog', 'Listening for viewer audio...', 'ok');
+        } else {
+          log('camLog', 'No peer connection available', 'err');
         }
-        talkAudio.srcObject = remoteStream;
-        talkAudio.play().catch(e => log('camLog', 'Audio play error: ' + e.message, 'err'));
-        log('camLog', 'Incoming audio ready', 'ok');
-      });
+      }, 1000);
 
       call.on('close', () => {
         setStatus('');
