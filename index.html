@@ -733,13 +733,8 @@ function initPeer() {
   peer.on('call', (call) => {
     log('camLog', 'Incoming call from viewer...', 'ok');
     if (localStream) {
-      call.answer(localStream);
-      currentCall = call;
-      setStatus('live');
-      log('camLog', 'Viewer connected — streaming live', 'ok');
-
-      // Use ontrack to catch incoming audio from viewer
-      setTimeout(() => {
+      // Set up ontrack BEFORE answering so we catch all incoming tracks
+      const setupAudio = () => {
         const pc = call.peerConnection || call._pc;
         if (pc) {
           pc.ontrack = (event) => {
@@ -759,11 +754,35 @@ function initPeer() {
               log('camLog', 'Incoming audio ready ✓', 'ok');
             }
           };
+          // Also check existing receivers for already-arrived tracks
+          pc.getReceivers().forEach(receiver => {
+            if (receiver.track && receiver.track.kind === 'audio') {
+              log('camLog', 'Found existing audio track', 'ok');
+              let talkAudio = document.getElementById('talkAudio');
+              if (!talkAudio) {
+                talkAudio = document.createElement('audio');
+                talkAudio.id = 'talkAudio';
+                talkAudio.autoplay = true;
+                talkAudio.setAttribute('playsinline', '');
+                document.body.appendChild(talkAudio);
+              }
+              const audioStream = new MediaStream([receiver.track]);
+              talkAudio.srcObject = audioStream;
+              talkAudio.play().catch(e => log('camLog', 'Audio play: ' + e.message, 'err'));
+            }
+          });
           log('camLog', 'Listening for viewer audio...', 'ok');
         } else {
-          log('camLog', 'No peer connection available', 'err');
+          // PC not ready yet, retry
+          setTimeout(setupAudio, 200);
         }
-      }, 1000);
+      };
+      setupAudio();
+
+      call.answer(localStream);
+      currentCall = call;
+      setStatus('live');
+      log('camLog', 'Viewer connected — streaming live', 'ok');
 
       call.on('close', () => {
         setStatus('');
