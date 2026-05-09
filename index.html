@@ -935,22 +935,20 @@ function forcePlay() {
 function startViewing() {
   const vid = document.getElementById('remoteVideo');
   const btn = document.getElementById('playBtn');
-  // Must start muted for autoplay policy, then unmute
-  vid.muted = true;
+  // Video is already muted from stream handler, just play it
   vid.play().then(() => {
-    vid.muted = false;
+    vid.muted = false; // unmute after successful play
     btn.style.display = 'none';
     document.getElementById('playOverlay').style.display = 'none';
     log('viewerLog', 'Playback started', 'ok');
   }).catch(e => {
     log('viewerLog', 'Play error: ' + e.message, 'err');
-    // Try again with muted
+    // Force it
     vid.muted = true;
+    vid.load();
     vid.play().then(() => {
       btn.style.display = 'none';
       document.getElementById('playOverlay').style.display = 'none';
-      log('viewerLog', 'Playback started (muted)', 'ok');
-      toast('Playing muted — tap unmute if needed');
     });
   });
 }
@@ -982,12 +980,14 @@ function connectToCamera() {
         const vid = document.getElementById('remoteVideo');
         if (vid.srcObject) return;
         viewerStream.getTracks().forEach(t => t.stop());
+        // Just set the source — don't try to play yet, wait for user gesture
         vid.srcObject = remoteStream;
+        vid.muted = true; // pre-mute to avoid autoplay issues
         document.getElementById('playBtn').style.display = 'block';
         document.getElementById('playOverlay').style.display = 'flex';
         setStatus('live');
-        log('viewerLog', 'Connected! Click ▶ START VIEWING button', 'ok');
-        toast('✅ Connected — click ▶ START VIEWING');
+        log('viewerLog', 'Connected! Tap ▶ START VIEWING', 'ok');
+        toast('✅ Connected — tap ▶ START VIEWING');
         document.getElementById('startRecBtn').disabled = false;
         document.getElementById('disconnectBtn').disabled = false;
         document.getElementById('talkBtn').disabled = false;
