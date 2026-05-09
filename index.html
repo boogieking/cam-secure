@@ -561,6 +561,7 @@
     </div>
   </div>
   <button id="playBtn" onclick="startViewing()" style="display:none;width:100%;margin-top:10px;padding:18px;background:#00e5ff;border:none;border-radius:8px;color:#000;font-family:'Share Tech Mono',monospace;font-size:1rem;letter-spacing:3px;cursor:pointer;font-weight:bold;">▶ START VIEWING</button>
+  <button id="unmuteBtn" onclick="unmuteVideo()" style="display:none;width:100%;margin-top:10px;padding:14px;background:rgba(0,229,255,0.1);border:1px solid #00e5ff;border-radius:8px;color:#00e5ff;font-family:'Share Tech Mono',monospace;font-size:0.8rem;letter-spacing:2px;cursor:pointer;">🔊 UNMUTE AUDIO</button>
 
   <canvas id="motionCanvas"></canvas>
 
@@ -953,6 +954,13 @@ function startViewing() {
   });
 }
 
+function unmuteVideo() {
+  const vid = document.getElementById('remoteVideo');
+  vid.muted = false;
+  document.getElementById('unmuteBtn').style.display = 'none';
+  log('viewerLog', 'Audio unmuted', 'ok');
+}
+
 function connectToCamera() {
   const rid = document.getElementById('remotePeerId').value.trim().toUpperCase();
   if (rid.length < 4) { toast('Enter the 4-letter code'); return; }
@@ -980,14 +988,17 @@ function connectToCamera() {
         const vid = document.getElementById('remoteVideo');
         if (vid.srcObject) return;
         viewerStream.getTracks().forEach(t => t.stop());
-        // Just set the source — don't try to play yet, wait for user gesture
         vid.srcObject = remoteStream;
-        vid.muted = true; // pre-mute to avoid autoplay issues
-        document.getElementById('playBtn').style.display = 'block';
-        document.getElementById('playOverlay').style.display = 'flex';
+        vid.muted = true;
+        vid.play().catch(() => {});
+        // Hide play button if shown
+        document.getElementById('playBtn').style.display = 'none';
+        document.getElementById('playOverlay').style.display = 'none';
         setStatus('live');
-        log('viewerLog', 'Connected! Tap ▶ START VIEWING', 'ok');
-        toast('✅ Connected — tap ▶ START VIEWING');
+        log('viewerLog', 'Connected! Stream live (muted)', 'ok');
+        // Show unmute button
+        document.getElementById('unmuteBtn').style.display = 'block';
+        toast('✅ Stream live — tap UNMUTE for audio');
         document.getElementById('startRecBtn').disabled = false;
         document.getElementById('disconnectBtn').disabled = false;
         document.getElementById('talkBtn').disabled = false;
@@ -1034,6 +1045,7 @@ function disconnectViewer() {
   document.getElementById('startRecBtn').disabled = true;
   document.getElementById('disconnectBtn').disabled = true;
   document.getElementById('talkBtn').disabled = true;
+  document.getElementById('unmuteBtn').style.display = 'none';
   log('viewerLog', 'Disconnected', '');
 }
 
