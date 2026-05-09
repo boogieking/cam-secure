@@ -733,61 +733,42 @@ function initPeer() {
   peer.on('call', (call) => {
     log('camLog', 'Incoming call from viewer...', 'ok');
     if (localStream) {
-      // Set up ontrack BEFORE answering so we catch all incoming tracks
-      const setupAudio = () => {
-        const pc = call.peerConnection || call._pc;
-        if (pc) {
-          pc.ontrack = (event) => {
-            log('camLog', 'Track received: ' + event.track.kind, 'ok');
-            if (event.track.kind === 'audio') {
-              let talkAudio = document.getElementById('talkAudio');
-              if (!talkAudio) {
-                talkAudio = document.createElement('audio');
-                talkAudio.id = 'talkAudio';
-                talkAudio.autoplay = true;
-                talkAudio.setAttribute('playsinline', '');
-                document.body.appendChild(talkAudio);
-              }
-              const audioStream = new MediaStream([event.track]);
-              talkAudio.srcObject = audioStream;
-              talkAudio.play().catch(e => log('camLog', 'Audio play: ' + e.message, 'err'));
-              log('camLog', 'Incoming audio ready ✓', 'ok');
-            }
-          };
-          // Also check existing receivers for already-arrived tracks
-          pc.getReceivers().forEach(receiver => {
-            if (receiver.track && receiver.track.kind === 'audio') {
-              log('camLog', 'Found existing audio track', 'ok');
-              let talkAudio = document.getElementById('talkAudio');
-              if (!talkAudio) {
-                talkAudio = document.createElement('audio');
-                talkAudio.id = 'talkAudio';
-                talkAudio.autoplay = true;
-                talkAudio.setAttribute('playsinline', '');
-                document.body.appendChild(talkAudio);
-              }
-              const audioStream = new MediaStream([receiver.track]);
-              talkAudio.srcObject = audioStream;
-              talkAudio.play().catch(e => log('camLog', 'Audio play: ' + e.message, 'err'));
-            }
-          });
-          log('camLog', 'Listening for viewer audio...', 'ok');
-        } else {
-          // PC not ready yet, retry
-          setTimeout(setupAudio, 200);
-        }
-      };
-      setupAudio();
-
       call.answer(localStream);
       currentCall = call;
       setStatus('live');
       log('camLog', 'Viewer connected — streaming live', 'ok');
 
+      // Set up audio output element once
+      let talkAudio = document.getElementById('talkAudio');
+      if (!talkAudio) {
+        talkAudio = document.createElement('audio');
+        talkAudio.id = 'talkAudio';
+        talkAudio.autoplay = true;
+        talkAudio.setAttribute('playsinline', '');
+        document.body.appendChild(talkAudio);
+      }
+
+      // Poll receivers to catch audio track (works with replaceTrack)
+      const audioInterval = setInterval(() => {
+        const pc = call.peerConnection || call._pc;
+        if (!pc) return;
+        const receivers = pc.getReceivers();
+        const audioReceiver = receivers.find(r => r.track && r.track.kind === 'audio' && r.track.readyState === 'live');
+        if (audioReceiver) {
+          const newStream = new MediaStream([audioReceiver.track]);
+          if (!talkAudio.srcObject || 
+              talkAudio.srcObject.getAudioTracks()[0] !== audioReceiver.track) {
+            talkAudio.srcObject = newStream;
+            talkAudio.play().catch(() => {});
+            log('camLog', 'Audio active ✓', 'ok');
+          }
+        }
+      }, 500);
+
       call.on('close', () => {
+        clearInterval(audioInterval);
         setStatus('');
         log('camLog', 'Viewer disconnected', '');
-        const talkAudio = document.getElementById('talkAudio');
         if (talkAudio) talkAudio.srcObject = null;
       });
     } else {
@@ -954,13 +935,23 @@ function forcePlay() {
 function startViewing() {
   const vid = document.getElementById('remoteVideo');
   const btn = document.getElementById('playBtn');
-  vid.muted = false;
+  // Must start muted for autoplay policy, then unmute
+  vid.muted = true;
   vid.play().then(() => {
+    vid.muted = false;
     btn.style.display = 'none';
     document.getElementById('playOverlay').style.display = 'none';
     log('viewerLog', 'Playback started', 'ok');
   }).catch(e => {
     log('viewerLog', 'Play error: ' + e.message, 'err');
+    // Try again with muted
+    vid.muted = true;
+    vid.play().then(() => {
+      btn.style.display = 'none';
+      document.getElementById('playOverlay').style.display = 'none';
+      log('viewerLog', 'Playback started (muted)', 'ok');
+      toast('Playing muted — tap unmute if needed');
+    });
   });
 }
 
