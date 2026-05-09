@@ -843,14 +843,30 @@ function startTalk(e) {
   navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     .then(stream => {
       talkStream = stream;
-      // Replace audio track in current call with viewer's mic
-      if (currentCall && currentCall.peerConnection) {
-        const sender = currentCall.peerConnection.getSenders()
-          .find(s => s.track && s.track.kind === 'audio');
-        if (sender) {
-          sender.replaceTrack(stream.getAudioTracks()[0]);
-          log('viewerLog', 'Talking to camera...', 'ok');
+      if (!currentCall) {
+        log('viewerLog', 'No active call', 'err');
+        return;
+      }
+      // Try multiple ways to get the peer connection
+      const pc = currentCall.peerConnection || 
+                 (currentCall._pc) || 
+                 (currentCall.dataChannel && currentCall.dataChannel._pc);
+      
+      if (pc) {
+        const senders = pc.getSenders();
+        log('viewerLog', 'Senders found: ' + senders.length, 'ok');
+        const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (audioSender) {
+          audioSender.replaceTrack(stream.getAudioTracks()[0])
+            .then(() => log('viewerLog', 'Talking to camera...', 'ok'))
+            .catch(err => log('viewerLog', 'replaceTrack failed: ' + err.message, 'err'));
+        } else {
+          // No audio sender — add the track instead
+          pc.addTrack(stream.getAudioTracks()[0], stream);
+          log('viewerLog', 'Added audio track to stream', 'ok');
         }
+      } else {
+        log('viewerLog', 'No peer connection found', 'err');
       }
     })
     .catch(e => {
