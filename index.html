@@ -1,27 +1,1255 @@
-Here's everything new from the second batch, clean and consolidated:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SecureCam</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080c0f'/><rect x='10' y='25' width='55' height='50' rx='8' fill='none' stroke='%2300e5ff' stroke-width='5'/><polygon points='65,40 90,28 90,72 65,60' fill='%2300e5ff'/><circle cx='37' cy='50' r='12' fill='%2300e5ff' opacity='0.3'/><circle cx='37' cy='50' r='6' fill='%2300e5ff'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080c0f'/><rect x='10' y='25' width='55' height='50' rx='8' fill='none' stroke='%2300e5ff' stroke-width='5'/><polygon points='65,40 90,28 90,72 65,60' fill='%2300e5ff'/><circle cx='37' cy='50' r='12' fill='%2300e5ff' opacity='0.3'/><circle cx='37' cy='50' r='6' fill='%2300e5ff'/></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SecureCam">
+<meta name="theme-color" content="#080c0f">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
 
-**PROPERTY TYPE & ACCESS**
-Apartment, step-free access (no internal stairs)
+  :root {
+    --bg: #080c0f;
+    --surface: #0d1317;
+    --border: #1a2530;
+    --accent: #00e5ff;
+    --accent2: #ff3d57;
+    --accent3: #39ff6a;
+    --accent4: #ffb830;
+    --text: #c8d8e4;
+    --dim: #4a6070;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+  }
 
-**AMENITIES — CONFIRMED TICKED**
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-Sitter Favourites: Beds (2), Bedding & pillows, Clothes storage (1), A/C, Heating (1), WiFi, Dedicated workspace (1), Sofa, Dining area, TV (2)
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-Kitchen: Stove, Oven, Microwave, Toaster, Kettle, Fridge, Freezer, Cooking basics (pots, pans, cutlery, glasses, oil, salt & pepper) — no Coffee maker, no Dishwasher, no Blender
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
 
-Bathroom: Shower, Shampoo, Hairdryer, Bathroom essentials (towels, toilet paper, soap) — no Bath
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
 
-Outdoor Spaces: Balcony ✓, Scenic views ✓ — no Garden, Patio, Terrace, Communal gardens, Pool, Hot tub, BBQ, Outdoor dining area
+  .logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-Safety & Security: Nothing ticked — no Security camera, no First aid kit, no Fire alarm, no Fire extinguisher, no Carbon monoxide alarm, no Burglar alarm
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
 
-Parking & Transport: Parking ✓ — no car use, no bike use
+  .logo-icon::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+  }
 
-Cleaning: Washer ✓, Iron ✓ — no Dryer, no Vacuum cleaner
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
 
-**PHOTOS**
-6 Bansko photos currently uploaded — building exterior, open-plan kitchen/living area (two angles), two bedroom shots, bathroom. All need deleting and replacing with SMA photos. No captions or room types assigned to any of them.
+  @keyframes pulseWarn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,48,0.6); }
+    50% { box-shadow: 0 0 0 8px rgba(255,184,48,0); }
+  }
 
----
+  .status-bar {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--dim);
+    display: flex;
+    gap: 14px;
+  }
 
-That's the complete picture. Ready to write whenever you are — **listing title first?**
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dim);
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .status-dot.live { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .status-dot.warn { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+  .mode-selector {
+    display: flex;
+    gap: 0;
+    margin: 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 14px;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .mode-btn:not(.active):hover { color: var(--accent); background: rgba(0,229,255,0.05); }
+
+  .panel { display: none; padding: 0 20px 20px; }
+  .panel.active { display: block; }
+
+  .cam-feed {
+    position: relative;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    width: 100%;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .cam-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .corner { position: absolute; width: 20px; height: 20px; }
+  .corner-tl { top: 10px; left: 10px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  .corner-tr { top: 10px; right: 10px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .corner-bl { bottom: 10px; left: 10px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  .corner-br { bottom: 10px; right: 10px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+  .rec-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(255,61,87,0.9);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+  }
+  .rec-badge.show { display: flex; }
+  .rec-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
+
+  /* Bark correction flash overlay on camera feed */
+  .correct-flash {
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--accent4);
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+    box-shadow: inset 0 0 40px rgba(255,184,48,0.35);
+  }
+  .correct-flash.active { opacity: 1; }
+
+  .motion-alert {
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--accent2);
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+    box-shadow: inset 0 0 40px rgba(255,61,87,0.3);
+  }
+  .motion-alert.active { opacity: 1; }
+
+  .timestamp {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(200,216,228,0.7);
+    pointer-events: none;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .btn {
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger { border-color: rgba(255,61,87,0.4); }
+  .btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn.success { border-color: rgba(57,255,106,0.4); }
+  .btn.success:hover { border-color: var(--accent3); color: var(--accent3); }
+  .btn.warn-btn { border-color: rgba(255,184,48,0.5); color: var(--accent4); font-size: 0.9rem; letter-spacing: 2px; }
+  .btn.warn-btn:hover { border-color: var(--accent4); background: rgba(255,184,48,0.08); }
+  .btn.warn-btn:active { background: rgba(255,184,48,0.2); transform: scale(0.97); }
+  .btn.warn-btn.firing { animation: pulseWarn 0.4s ease; border-color: var(--accent4); background: rgba(255,184,48,0.15); }
+  .btn.full { grid-column: 1/-1; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .info-card.full { grid-column: 1/-1; }
+
+  /* Bark correction card — highlighted */
+  .info-card.bark-card {
+    border-color: rgba(255,184,48,0.35);
+    background: rgba(255,184,48,0.04);
+  }
+
+  .info-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .info-value {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  .peer-id-display {
+    font-size: 1.4rem;
+    letter-spacing: 6px;
+    color: var(--accent3);
+  }
+
+  .connect-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .input-field {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 1rem;
+    letter-spacing: 4px;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--dim); letter-spacing: 2px; font-size: 0.75rem; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Volume meter bar */
+  .vol-meter {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .vol-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: var(--accent3);
+    transition: width 0.1s, background 0.1s;
+  }
+  .vol-bar.loud { background: var(--accent2); }
+  .vol-bar.medium { background: var(--accent4); }
+
+  /* Auto-bark toggle row */
+  .bark-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .bark-toggle-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent4);
+    letter-spacing: 1px;
+  }
+
+  .toggle {
+    width: 44px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent4); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 23px; }
+
+  /* Cooldown indicator */
+  .cooldown-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .cooldown-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent4);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+
+  .log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    height: 100px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-top: 12px;
+  }
+  .log-entry { margin-bottom: 3px; }
+  .log-entry .time { color: var(--accent); margin-right: 8px; }
+  .log-entry.ok .msg { color: var(--accent3); }
+  .log-entry.err .msg { color: var(--accent2); }
+  .log-entry.bark .msg { color: var(--accent4); }
+
+  .clips-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .clip-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .clip-name { color: var(--text); }
+  .clip-meta { color: var(--dim); font-size: 0.6rem; }
+  .clip-dl {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 10px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .clip-dl:hover { background: rgba(0,229,255,0.1); }
+
+  .empty-state {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--dim);
+    padding: 30px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 0.85rem; color: var(--text); }
+  .setting-sub { font-family: var(--mono); font-size: 0.65rem; color: var(--dim); margin-top: 2px; }
+
+  .section-head {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-head::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  #motionCanvas { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    z-index: 10000;
+    transition: transform 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    SECURECAM
+  </div>
+  <div class="status-bar">
+    <span><span class="status-dot" id="connDot"></span><span id="connStatus">OFFLINE</span></span>
+  </div>
+</div>
+
+<div class="mode-selector">
+  <button class="mode-btn active" onclick="setMode('camera')">📷 CAMERA</button>
+  <button class="mode-btn" onclick="setMode('viewer')">👁 VIEWER</button>
+  <button class="mode-btn" onclick="setMode('clips')">🎞 CLIPS</button>
+</div>
+
+<!-- CAMERA PANEL -->
+<div class="panel active" id="panel-camera">
+
+  <div class="cam-feed">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div class="cam-overlay">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="motion-alert" id="motionAlert"></div>
+      <div class="correct-flash" id="camCorrectFlash"></div>
+      <div class="rec-badge" id="recBadge"><span class="rec-dot"></span>REC</div>
+      <div class="timestamp" id="camTimestamp">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="section-head">YOUR DEVICE ID</div>
+  <div class="info-card">
+    <div class="info-label">Share this code with your viewer phone</div>
+    <div class="info-value peer-id-display" id="myPeerId">----</div>
+  </div>
+
+  <div class="section-head">CAMERA CONTROLS</div>
+  <div class="controls">
+    <button class="btn success" id="startCamBtn" onclick="startCamera()">▶ START CAM</button>
+    <button class="btn danger" id="stopCamBtn" onclick="stopCamera()" disabled>■ STOP</button>
+    <button class="btn full" id="flipBtn" onclick="flipCamera()">⟳ FLIP CAMERA</button>
+  </div>
+
+  <div class="section-head">ACTIVITY LOG</div>
+  <div class="log" id="camLog">
+    <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to start...</span></div>
+  </div>
+</div>
+
+<!-- VIEWER PANEL -->
+<div class="panel" id="panel-viewer">
+
+  <div class="cam-feed">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <div class="cam-overlay">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="motion-alert" id="remoteMotionAlert"></div>
+      <div class="rec-badge" id="viewerRecBadge"><span class="rec-dot"></span>REC</div>
+      <div class="timestamp" id="viewerTimestamp">--:--:--</div>
+    </div>
+    <div id="playOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:10;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:1.2rem;color:#00e5ff;text-align:center;letter-spacing:2px;">STREAM READY</div>
+    </div>
+  </div>
+  <button id="playBtn" onclick="startViewing()" style="display:none;width:100%;margin-top:10px;padding:18px;background:#00e5ff;border:none;border-radius:8px;color:#000;font-family:'Share Tech Mono',monospace;font-size:1rem;letter-spacing:3px;cursor:pointer;font-weight:bold;">▶ START VIEWING</button>
+
+  <canvas id="motionCanvas"></canvas>
+
+  <!-- ── BARK CORRECTION ── -->
+  <div class="section-head">🔔 BARK CORRECTION</div>
+  <div class="info-card full bark-card">
+    <div class="info-label">Manual — plays correction sound on camera phone</div>
+    <button class="btn full warn-btn" id="correctBtn" onclick="sendCorrection()" disabled>
+      🔔 &nbsp;CORRECT
+    </button>
+
+    <div class="bark-toggle-row">
+      <span class="bark-toggle-label">AUTO MODE (bark detection)</span>
+      <div class="toggle" id="autoToggle" onclick="toggleAuto()"></div>
+    </div>
+
+    <div class="info-label" style="margin-top:10px;">MIC VOLUME (from camera)</div>
+    <div class="vol-meter"><div class="vol-bar" id="volBar"></div></div>
+
+    <div class="info-label" style="margin-top:10px;">AUTO TRIGGER THRESHOLD — lower = more sensitive</div>
+    <div class="slider-row">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">LOW</span>
+      <input type="range" id="barkSlider" min="5" max="90" value="40"
+             style="accent-color: var(--accent4);">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">HIGH</span>
+    </div>
+
+    <div class="info-label" style="margin-top:10px;">COOLDOWN (seconds between triggers)</div>
+    <div class="slider-row">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">3s</span>
+      <input type="range" id="cooldownSlider" min="3" max="30" value="8"
+             style="accent-color: var(--accent4);">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">30s</span>
+    </div>
+    <div class="cooldown-bar"><div class="cooldown-fill" id="cooldownFill"></div></div>
+  </div>
+
+  <div class="section-head">CONNECT TO CAMERA</div>
+  <div class="info-card full">
+    <div class="info-label">Enter the camera phone's 4-letter code</div>
+    <div class="connect-row">
+      <input class="input-field" id="remotePeerId" maxlength="4" placeholder="ABCD" oninput="this.value = this.value.toUpperCase()">
+      <button class="btn" id="connectBtn" onclick="connectToCamera()">CONNECT</button>
+    </div>
+  </div>
+
+  <div class="section-head">MOTION SENSITIVITY</div>
+  <div class="info-card full">
+    <div class="info-label">Threshold — lower = more sensitive</div>
+    <div class="slider-row">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent)">LOW</span>
+      <input type="range" id="motionSlider" min="5" max="50" value="20">
+      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent)">HIGH</span>
+    </div>
+  </div>
+
+  <div class="section-head">VIEWER CONTROLS</div>
+  <div class="controls">
+    <button class="btn success" id="startRecBtn" onclick="startRecording()" disabled>⏺ RECORD</button>
+    <button class="btn danger" id="stopRecBtn" onclick="stopRecording()" disabled>■ STOP REC</button>
+    <button class="btn full danger" id="disconnectBtn" onclick="disconnectViewer()" disabled>✕ DISCONNECT</button>
+  </div>
+
+  <div class="section-head">ACTIVITY LOG</div>
+  <div class="log" id="viewerLog">
+    <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to connect...</span></div>
+  </div>
+</div>
+
+<!-- CLIPS PANEL -->
+<div class="panel" id="panel-clips">
+  <div class="section-head">SAVED RECORDINGS</div>
+  <div class="clips-list" id="clipsList">
+    <div class="empty-state">No recordings yet.<br>Connect as Viewer and hit Record.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let peer, localStream, currentCall, mediaRecorder;
+let dataConn = null;          // PeerJS data channel (viewer → camera commands)
+let facingMode = 'environment';
+let clips = [];
+let motionInterval, motionActive = false;
+let prevImageData = null;
+
+// Bark correction state
+let autoModeOn = false;
+let barkCooldown = false;
+let cooldownTimerInterval = null;
+let audioAnalyser = null;
+let audioContext = null;
+let volInterval = null;
+
+// Correction audio (camera side)
+let correctionAudio = null;
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function ts() {
+  return new Date().toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function log(panelId, msg, type = '') {
+  const el = document.getElementById(panelId);
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + type;
+  entry.innerHTML = `<span class="time">${ts()}</span><span class="msg">${msg}</span>`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function setStatus(state) {
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connStatus');
+  dot.className = 'status-dot';
+  if (state === 'live') { dot.classList.add('live'); txt.textContent = 'LIVE'; }
+  else if (state === 'warn') { dot.classList.add('warn'); txt.textContent = 'CONNECTING'; }
+  else { txt.textContent = 'OFFLINE'; }
+}
+
+function nowStr() {
+  return new Date().toISOString().replace('T', '_').substring(0, 19).replace(/:/g, '-');
+}
+
+// ── Timestamp tick ─────────────────────────────────────────────────────────
+setInterval(() => {
+  const t = ts();
+  document.getElementById('camTimestamp').textContent = t;
+  document.getElementById('viewerTimestamp').textContent = t;
+}, 1000);
+
+// ── Mode switching ─────────────────────────────────────────────────────────
+function setMode(mode) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + mode).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── PeerJS init ────────────────────────────────────────────────────────────
+function genId() {
+  const chars = 'ACDEFGHJKLMNPQRTUVWXYZ234679';
+  let id = '';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+let keepAliveTimer = null;
+
+function initPeer() {
+  const id = genId();
+  peer = new Peer(id, {
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    }
+  });
+
+  peer.on('open', (pid) => {
+    document.getElementById('myPeerId').textContent = pid;
+    log('camLog', 'Peer ID ready: ' + pid, 'ok');
+    setStatus('');
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = setInterval(() => {
+      if (peer && peer.disconnected) {
+        peer.reconnect();
+        log('camLog', 'Reconnecting to server...', '');
+      }
+    }, 20000);
+  });
+
+  peer.on('disconnected', () => {
+    log('camLog', 'Server disconnected — reconnecting...', 'err');
+    log('viewerLog', 'Server disconnected — reconnecting...', 'err');
+    peer.reconnect();
+  });
+
+  peer.on('error', (err) => {
+    log('camLog', 'Peer error: ' + err.type, 'err');
+    log('viewerLog', 'Peer error: ' + err.type, 'err');
+    setStatus('warn');
+    if (err.type === 'peer-unavailable') {
+      log('viewerLog', 'Camera not found — check code and try again', 'err');
+    }
+  });
+
+  // ── Incoming call (camera side) ──
+  peer.on('call', (call) => {
+    log('camLog', 'Incoming call from viewer...', 'ok');
+    if (localStream) {
+      call.answer(localStream);
+      currentCall = call;
+      setStatus('live');
+      log('camLog', 'Viewer connected — streaming live', 'ok');
+      call.on('close', () => {
+        setStatus('');
+        log('camLog', 'Viewer disconnected', '');
+      });
+    } else {
+      log('camLog', 'Call received but camera not started yet', 'err');
+      toast('⚠️ Start camera first');
+    }
+  });
+
+  // ── Incoming data connection (camera side — receives CORRECT command) ──
+  peer.on('connection', (conn) => {
+    log('camLog', 'Command channel open', 'ok');
+    conn.on('data', (data) => {
+      if (data === 'CORRECT') {
+        playCorrection();
+      }
+    });
+  });
+}
+
+// ── Camera ─────────────────────────────────────────────────────────────────
+async function startCamera() {
+  try {
+    if (localStream) stopCamera();
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
+    document.getElementById('localVideo').srcObject = localStream;
+    document.getElementById('startCamBtn').disabled = true;
+    document.getElementById('stopCamBtn').disabled = false;
+    document.getElementById('flipBtn').disabled = false;
+    log('camLog', 'Camera started (' + facingMode + ')', 'ok');
+    toast('📷 Camera active');
+
+    // Pre-load correction audio
+    correctionAudio = new Audio('collar.mp3');
+    correctionAudio.load();
+  } catch (e) {
+    log('camLog', 'Camera error: ' + e.message, 'err');
+    toast('❌ Camera access denied');
+  }
+}
+
+function stopCamera() {
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+    document.getElementById('localVideo').srcObject = null;
+  }
+  if (currentCall) { currentCall.close(); currentCall = null; }
+  document.getElementById('startCamBtn').disabled = false;
+  document.getElementById('stopCamBtn').disabled = true;
+  setStatus('');
+  log('camLog', 'Camera stopped', '');
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  if (localStream) await startCamera();
+}
+
+// ── Play correction sound (camera phone) ──────────────────────────────────
+function playCorrection() {
+  const flash = document.getElementById('camCorrectFlash');
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 800);
+  log('camLog', '🔔 Correction sound played', 'bark');
+
+  if (correctionAudio) {
+    correctionAudio.currentTime = 0;
+    correctionAudio.play().catch(e => {
+      log('camLog', 'Audio error: ' + e.message, 'err');
+    });
+  } else {
+    // Fallback: generate a sharp beep via Web Audio API
+    playFallbackBeep();
+  }
+}
+
+function playFallbackBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(2800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.8, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+// ── Viewer ─────────────────────────────────────────────────────────────────
+function forcePlay() {
+  const video = document.getElementById('remoteVideo');
+  video.muted = true;
+  video.play().then(() => {
+    video.muted = false;
+    document.getElementById('playOverlay').style.display = 'none';
+    log('viewerLog', 'Playback started', 'ok');
+  }).catch(e => {
+    log('viewerLog', 'Play error: ' + e.message, 'err');
+  });
+}
+
+function startViewing() {
+  const vid = document.getElementById('remoteVideo');
+  const btn = document.getElementById('playBtn');
+  vid.muted = false;
+  vid.play().then(() => {
+    btn.style.display = 'none';
+    document.getElementById('playOverlay').style.display = 'none';
+    log('viewerLog', 'Playback started', 'ok');
+  }).catch(e => {
+    log('viewerLog', 'Play error: ' + e.message, 'err');
+  });
+}
+
+function connectToCamera() {
+  const rid = document.getElementById('remotePeerId').value.trim().toUpperCase();
+  if (rid.length < 4) { toast('Enter the 4-letter code'); return; }
+
+  setStatus('warn');
+  log('viewerLog', 'Requesting camera to initiate call...', '');
+
+  // Open data channel to camera for sending CORRECT commands
+  dataConn = peer.connect(rid, { reliable: true });
+  dataConn.on('open', () => {
+    log('viewerLog', 'Command channel ready', 'ok');
+  });
+  dataConn.on('error', (e) => {
+    log('viewerLog', 'Data channel error: ' + e, 'err');
+  });
+
+  navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } })
+    .then((viewerStream) => {
+      log('viewerLog', 'Calling camera: ' + rid, '');
+
+      const call = peer.call(rid, viewerStream);
+
+      if (!call) {
+        log('viewerLog', 'Call failed — check the code', 'err');
+        setStatus('');
+        viewerStream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
+      currentCall = call;
+
+      call.on('stream', (remoteStream) => {
+        const vid = document.getElementById('remoteVideo');
+        if (vid.srcObject) return;
+        viewerStream.getTracks().forEach(t => t.stop());
+        vid.srcObject = remoteStream;
+        document.getElementById('playBtn').style.display = 'block';
+        document.getElementById('playOverlay').style.display = 'flex';
+        setStatus('live');
+        log('viewerLog', 'Connected! Click ▶ START VIEWING button', 'ok');
+        toast('✅ Connected — click ▶ START VIEWING');
+        document.getElementById('startRecBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = false;
+        document.getElementById('correctBtn').disabled = false;
+        startMotionDetection(remoteStream);
+        startVolumeMonitor(remoteStream);
+      });
+
+      call.on('close', () => {
+        setStatus('');
+        log('viewerLog', 'Camera disconnected', '');
+        stopMotionDetection();
+        stopVolumeMonitor();
+        document.getElementById('startRecBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('correctBtn').disabled = true;
+      });
+
+      call.on('error', (e) => {
+        log('viewerLog', 'Stream error: ' + e, 'err');
+        setStatus('warn');
+      });
+
+      setTimeout(() => {
+        if (!document.getElementById('remoteVideo').srcObject) {
+          log('viewerLog', 'No response — is camera phone streaming?', 'err');
+          toast('⚠️ No response from camera');
+          setStatus('');
+          viewerStream.getTracks().forEach(t => t.stop());
+        }
+      }, 10000);
+    })
+    .catch((e) => {
+      log('viewerLog', 'Camera/mic denied: ' + e.message, 'err');
+      toast('❌ Allow camera & mic to connect');
+      setStatus('');
+    });
+}
+
+function disconnectViewer() {
+  if (currentCall) { currentCall.close(); currentCall = null; }
+  if (dataConn) { dataConn.close(); dataConn = null; }
+  document.getElementById('remoteVideo').srcObject = null;
+  stopMotionDetection();
+  stopVolumeMonitor();
+  stopRecording();
+  setStatus('');
+  document.getElementById('startRecBtn').disabled = true;
+  document.getElementById('disconnectBtn').disabled = true;
+  document.getElementById('correctBtn').disabled = true;
+  log('viewerLog', 'Disconnected', '');
+}
+
+// ── Bark Correction — Viewer side ──────────────────────────────────────────
+
+function sendCorrection() {
+  if (barkCooldown) { toast('⏳ Cooldown active'); return; }
+  if (!dataConn || !dataConn.open) { toast('⚠️ No command channel'); return; }
+
+  dataConn.send('CORRECT');
+  log('viewerLog', '🔔 Correction sent', 'bark');
+
+  const btn = document.getElementById('correctBtn');
+  btn.classList.add('firing');
+  setTimeout(() => btn.classList.remove('firing'), 400);
+
+  startCooldown();
+}
+
+function toggleAuto() {
+  autoModeOn = !autoModeOn;
+  const tog = document.getElementById('autoToggle');
+  tog.classList.toggle('on', autoModeOn);
+  log('viewerLog', 'Auto mode ' + (autoModeOn ? 'ON' : 'OFF'), autoModeOn ? 'ok' : '');
+  toast(autoModeOn ? '🤖 Auto correction ON' : '🤖 Auto correction OFF');
+}
+
+function startCooldown() {
+  barkCooldown = true;
+  const secs = parseInt(document.getElementById('cooldownSlider').value);
+  const fill = document.getElementById('cooldownFill');
+  let elapsed = 0;
+  clearInterval(cooldownTimerInterval);
+  fill.style.width = '100%';
+  cooldownTimerInterval = setInterval(() => {
+    elapsed += 100;
+    const pct = Math.max(0, 100 - (elapsed / (secs * 1000)) * 100);
+    fill.style.width = pct + '%';
+    if (elapsed >= secs * 1000) {
+      clearInterval(cooldownTimerInterval);
+      barkCooldown = false;
+      fill.style.width = '0%';
+    }
+  }, 100);
+}
+
+// ── Volume monitor (viewer analyses camera audio stream) ────────────────────
+function startVolumeMonitor(stream) {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(stream);
+    audioAnalyser = audioContext.createAnalyser();
+    audioAnalyser.fftSize = 256;
+    source.connect(audioAnalyser);
+    const dataArr = new Uint8Array(audioAnalyser.frequencyBinCount);
+
+    volInterval = setInterval(() => {
+      audioAnalyser.getByteFrequencyData(dataArr);
+      let sum = 0;
+      for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
+      const avg = sum / dataArr.length;
+      const pct = Math.min(100, (avg / 128) * 100);
+
+      const bar = document.getElementById('volBar');
+      bar.style.width = pct + '%';
+      bar.className = 'vol-bar' + (pct > 70 ? ' loud' : pct > 40 ? ' medium' : '');
+
+      // Auto-trigger
+      if (autoModeOn && !barkCooldown) {
+        const threshold = parseInt(document.getElementById('barkSlider').value);
+        if (pct > threshold) {
+          sendCorrection();
+          log('viewerLog', `⚡ Auto-triggered (vol ${Math.round(pct)}%)`, 'bark');
+        }
+      }
+    }, 150);
+  } catch (e) {
+    log('viewerLog', 'Audio monitor error: ' + e.message, 'err');
+  }
+}
+
+function stopVolumeMonitor() {
+  clearInterval(volInterval);
+  volInterval = null;
+  if (audioContext) { audioContext.close(); audioContext = null; }
+  audioAnalyser = null;
+  document.getElementById('volBar').style.width = '0%';
+}
+
+// ── Recording ──────────────────────────────────────────────────────────────
+let recChunks = [];
+let recStartTime;
+
+function startRecording() {
+  const stream = document.getElementById('remoteVideo').srcObject;
+  if (!stream) { toast('No stream to record'); return; }
+
+  recChunks = [];
+  recStartTime = Date.now();
+
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9' : 'video/webm'
+  });
+
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+  mediaRecorder.onstop = saveClip;
+  mediaRecorder.start(1000);
+
+  document.getElementById('viewerRecBadge').classList.add('show');
+  document.getElementById('startRecBtn').disabled = true;
+  document.getElementById('stopRecBtn').disabled = false;
+  log('viewerLog', 'Recording started', 'ok');
+  toast('⏺ Recording...');
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  document.getElementById('viewerRecBadge').classList.remove('show');
+  document.getElementById('startRecBtn').disabled = false;
+  document.getElementById('stopRecBtn').disabled = true;
+}
+
+function saveClip() {
+  const blob = new Blob(recChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const duration = Math.round((Date.now() - recStartTime) / 1000);
+  const name = 'clip_' + nowStr() + '.webm';
+
+  clips.unshift({ name, url, duration, blob });
+  renderClips();
+  log('viewerLog', 'Clip saved: ' + name, 'ok');
+  toast('💾 Clip saved');
+}
+
+function renderClips() {
+  const list = document.getElementById('clipsList');
+  if (!clips.length) {
+    list.innerHTML = '<div class="empty-state">No recordings yet.<br>Connect as Viewer and hit Record.</div>';
+    return;
+  }
+  list.innerHTML = clips.map((c, i) => `
+    <div class="clip-item">
+      <div>
+        <div class="clip-name">${c.name}</div>
+        <div class="clip-meta">${c.duration}s</div>
+      </div>
+      <button class="clip-dl" onclick="downloadClip(${i})">⬇ SAVE</button>
+    </div>
+  `).join('');
+}
+
+function downloadClip(i) {
+  const c = clips[i];
+  const a = document.createElement('a');
+  a.href = c.url;
+  a.download = c.name;
+  a.click();
+}
+
+// ── Motion detection ───────────────────────────────────────────────────────
+function startMotionDetection(stream) {
+  const video = document.getElementById('remoteVideo');
+  const canvas = document.getElementById('motionCanvas');
+  const ctx = canvas.getContext('2d');
+
+  motionInterval = setInterval(() => {
+    if (video.readyState < 2) return;
+    canvas.width = 160;
+    canvas.height = 90;
+    ctx.drawImage(video, 0, 0, 160, 90);
+    const imageData = ctx.getImageData(0, 0, 160, 90);
+    if (prevImageData) {
+      const threshold = parseInt(document.getElementById('motionSlider').value);
+      let diff = 0;
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        diff += Math.abs(imageData.data[i] - prevImageData.data[i]);
+      }
+      const avg = diff / (160 * 90);
+      if (avg > threshold) {
+        triggerMotion();
+      }
+    }
+    prevImageData = imageData;
+  }, 500);
+}
+
+function stopMotionDetection() {
+  clearInterval(motionInterval);
+  prevImageData = null;
+}
+
+let motionCooldown = false;
+function triggerMotion() {
+  if (motionCooldown) return;
+  motionCooldown = true;
+  const alert = document.getElementById('remoteMotionAlert');
+  alert.classList.add('active');
+  log('viewerLog', '⚠ Motion detected', 'err');
+  toast('⚠️ Motion detected!');
+  setTimeout(() => {
+    alert.classList.remove('active');
+    motionCooldown = false;
+  }, 2000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+initPeer();
+</script>
+</body>
+</html>
