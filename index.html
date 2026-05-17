@@ -862,9 +862,14 @@ async function startCamera() {
     log('camLog', 'Camera started (' + facingMode + ')', 'ok');
     toast('📷 Camera active');
 
-    // Pre-load correction audio
+    // Pre-load correction audio and unlock for mobile
     correctionAudio = new Audio('collar.m4a');
     correctionAudio.load();
+    // Unlock audio on mobile — must happen inside a user gesture (startCamera tap)
+    correctionAudio.play().then(() => {
+      correctionAudio.pause();
+      correctionAudio.currentTime = 0;
+    }).catch(() => {});
   } catch (e) {
     log('camLog', 'Camera error: ' + e.message, 'err');
     toast('❌ Camera access denied');
