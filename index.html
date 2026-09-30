@@ -11,1250 +11,1118 @@
 <meta name="apple-mobile-web-app-title" content="SecureCam">
 <meta name="theme-color" content="#080c0f">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
-
   :root {
-    --bg: #080c0f;
-    --surface: #0d1317;
-    --border: #1a2530;
-    --accent: #00e5ff;
-    --accent2: #ff3d57;
-    --accent3: #39ff6a;
-    --accent4: #ffb830;
-    --text: #c8d8e4;
-    --dim: #4a6070;
-    --mono: 'Share Tech Mono', monospace;
-    --sans: 'Barlow', sans-serif;
+    --bg: #080c0f; --surface: #0d1317; --border: #1a2530;
+    --accent: #00e5ff; --accent2: #ff3d57; --accent3: #39ff6a;
+    --text: #c8d8e4; --dim: #4a6070;
+    --mono: 'Share Tech Mono', ui-monospace, monospace;
+    --sans: 'Barlow', system-ui, sans-serif;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
   }
-
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .logo {
-    font-family: var(--mono);
-    font-size: 1.1rem;
-    color: var(--accent);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo-icon {
-    width: 28px;
-    height: 28px;
-    border: 2px solid var(--accent);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  .logo-icon::after {
-    content: '';
-    width: 10px;
-    height: 10px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: blink 2s infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
-  }
-
-  @keyframes pulseWarn {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,48,0.6); }
-    50% { box-shadow: 0 0 0 8px rgba(255,184,48,0); }
-  }
-
-  .status-bar {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--dim);
-    display: flex;
-    gap: 14px;
-  }
-
-  .status-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--dim);
-    margin-right: 5px;
-    vertical-align: middle;
-  }
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .logo { font-family: var(--mono); font-size: 1.1rem; color: var(--accent); letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 28px; height: 28px; border: 2px solid var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon::after { content: ''; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+  .status-bar { font-family: var(--mono); font-size: 0.7rem; color: var(--dim); }
+  .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--dim); margin-right: 5px; vertical-align: middle; }
   .status-dot.live { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
-  .status-dot.warn { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .status-dot.warn { background: #ffb300; box-shadow: 0 0 6px #ffb300; }
 
-  .mode-selector {
-    display: flex;
-    gap: 0;
-    margin: 20px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .mode-btn {
-    flex: 1;
-    padding: 14px;
-    background: transparent;
-    border: none;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border-right: 1px solid var(--border);
-    text-transform: uppercase;
-  }
+  .mode-selector { display: flex; margin: 16px 20px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mode-btn { flex: 1; padding: 13px 4px; background: transparent; border: none; border-right: 1px solid var(--border); color: var(--dim); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 1px; cursor: pointer; }
   .mode-btn:last-child { border-right: none; }
-  .mode-btn.active {
-    background: var(--accent);
-    color: var(--bg);
-    font-weight: 700;
-  }
-  .mode-btn:not(.active):hover { color: var(--accent); background: rgba(0,229,255,0.05); }
+  .mode-btn.active { background: var(--accent); color: var(--bg); font-weight: 700; }
 
-  .panel { display: none; padding: 0 20px 20px; }
+  .panel { display: none; padding: 0 20px 24px; }
   .panel.active { display: block; }
 
-  .cam-feed {
-    position: relative;
-    background: #000;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    aspect-ratio: 16/9;
-    width: 100%;
-  }
-
-  video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .cam-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
+  .cam-feed { position: relative; background: #000; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; width: 100%; }
+  .cam-feed video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cam-overlay { position: absolute; inset: 0; pointer-events: none; }
   .corner { position: absolute; width: 20px; height: 20px; }
   .corner-tl { top: 10px; left: 10px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
   .corner-tr { top: 10px; right: 10px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
   .corner-bl { bottom: 10px; left: 10px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
   .corner-br { bottom: 10px; right: 10px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .timestamp { position: absolute; bottom: 12px; left: 12px; font-family: var(--mono); font-size: 0.65rem; color: rgba(200,216,228,0.7); }
+  .badge { position: absolute; top: 14px; right: 14px; background: rgba(57,255,106,0.9); color: #000; font-family: var(--mono); font-size: 0.65rem; padding: 3px 8px; border-radius: 3px; display: none; }
+  .badge.show { display: block; }
 
-  .rec-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: rgba(255,61,87,0.9);
-    color: #fff;
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    padding: 3px 8px;
-    border-radius: 3px;
-    display: none;
-    align-items: center;
-    gap: 5px;
-    pointer-events: none;
-  }
-  .rec-badge.show { display: flex; }
-  .rec-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
-
-  /* Bark correction flash overlay on camera feed */
-  .correct-flash {
-    position: absolute;
-    inset: 0;
-    border: 3px solid var(--accent4);
-    border-radius: 10px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.1s;
-    box-shadow: inset 0 0 40px rgba(255,184,48,0.35);
-  }
-  .correct-flash.active { opacity: 1; }
-
-  .motion-alert {
-    position: absolute;
-    inset: 0;
-    border: 3px solid var(--accent2);
-    border-radius: 10px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.1s;
-    box-shadow: inset 0 0 40px rgba(255,61,87,0.3);
-  }
-  .motion-alert.active { opacity: 1; }
-
-  .timestamp {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: rgba(200,216,228,0.7);
-    pointer-events: none;
-  }
-
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .btn {
-    padding: 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn.danger { border-color: rgba(255,61,87,0.4); }
-  .btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
-  .btn.success { border-color: rgba(57,255,106,0.4); }
-  .btn.success:hover { border-color: var(--accent3); color: var(--accent3); }
-  .btn.warn-btn { border-color: rgba(255,184,48,0.5); color: var(--accent4); font-size: 0.9rem; letter-spacing: 2px; }
-  .btn.warn-btn:hover { border-color: var(--accent4); background: rgba(255,184,48,0.08); }
-  .btn.warn-btn:active { background: rgba(255,184,48,0.2); transform: scale(0.97); }
-  .btn.warn-btn.firing { animation: pulseWarn 0.4s ease; border-color: var(--accent4); background: rgba(255,184,48,0.15); }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .btn { padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn:active { border-color: var(--accent); color: var(--accent); }
+  .btn.danger { border-color: rgba(255,61,87,0.45); }
+  .btn.success { border-color: rgba(57,255,106,0.45); }
   .btn.full { grid-column: 1/-1; }
+  .btn.small { padding: 8px 12px; font-size: 0.65rem; }
   .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 12px;
-  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .info-label { font-family: var(--mono); font-size: 0.62rem; color: var(--dim); letter-spacing: 1px; margin-bottom: 6px; }
+  .info-value { font-family: var(--mono); font-size: 0.9rem; color: var(--accent); }
+  .peer-id-display { font-size: 1.6rem; letter-spacing: 8px; color: var(--accent3); }
+  .help { font-size: 0.8rem; color: var(--dim); line-height: 1.45; margin-top: 8px; }
 
-  .info-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-  }
-  .info-card.full { grid-column: 1/-1; }
+  .section-head { font-family: var(--mono); font-size: 0.62rem; color: var(--dim); letter-spacing: 3px; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  /* Bark correction card — highlighted */
-  .info-card.bark-card {
-    border-color: rgba(255,184,48,0.35);
-    background: rgba(255,184,48,0.04);
-  }
-
-  .info-label {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .info-value {
-    font-family: var(--mono);
-    font-size: 0.9rem;
-    color: var(--accent);
-    word-break: break-all;
-  }
-
-  .peer-id-display {
-    font-size: 1.4rem;
-    letter-spacing: 6px;
-    color: var(--accent3);
-  }
-
-  .connect-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .input-field {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 1rem;
-    letter-spacing: 4px;
-    text-align: center;
-    text-transform: uppercase;
-    outline: none;
-    transition: border-color 0.2s;
-  }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .input-field { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: var(--mono); font-size: 1rem; outline: none; }
   .input-field:focus { border-color: var(--accent); }
-  .input-field::placeholder { color: var(--dim); letter-spacing: 2px; font-size: 0.75rem; }
+  .input-field.code { letter-spacing: 4px; text-align: center; text-transform: uppercase; }
+  .input-field::placeholder { color: var(--dim); letter-spacing: 1px; font-size: 0.8rem; }
 
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 10px;
-  }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-family: var(--mono); font-size: 0.65rem; color: var(--accent); }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--border); border-radius: 2px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-  input[type=range] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    outline: none;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  /* Volume meter bar */
-  .vol-meter {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    margin-top: 8px;
-    overflow: hidden;
-    position: relative;
-  }
-  .vol-bar {
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: var(--accent3);
-    transition: width 0.1s, background 0.1s;
-  }
-  .vol-bar.loud { background: var(--accent2); }
-  .vol-bar.medium { background: var(--accent4); }
-
-  /* Auto-bark toggle row */
-  .bark-toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-  .bark-toggle-label {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--accent4);
-    letter-spacing: 1px;
-  }
-
-  .toggle {
-    width: 44px;
-    height: 24px;
-    background: var(--border);
-    border-radius: 12px;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  .toggle.on { background: var(--accent4); }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    background: #fff;
-    border-radius: 50%;
-    transition: left 0.2s;
-  }
-  .toggle.on::after { left: 23px; }
-
-  /* Cooldown indicator */
-  .cooldown-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-top: 6px;
-    overflow: hidden;
-  }
-  .cooldown-fill {
-    height: 100%;
-    width: 0%;
-    background: var(--accent4);
-    border-radius: 2px;
-    transition: width 0.1s linear;
-  }
-
-  .log {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    height: 100px;
-    overflow-y: auto;
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--dim);
-    margin-top: 12px;
-  }
+  .log { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; height: 130px; overflow-y: auto; font-family: var(--mono); font-size: 0.65rem; color: var(--dim); }
   .log-entry { margin-bottom: 3px; }
   .log-entry .time { color: var(--accent); margin-right: 8px; }
   .log-entry.ok .msg { color: var(--accent3); }
   .log-entry.err .msg { color: var(--accent2); }
-  .log-entry.bark .msg { color: var(--accent4); }
 
-  .clips-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-  .clip-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-  }
-  .clip-name { color: var(--text); }
+  /* Viewer grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid.one { grid-template-columns: 1fr; }
+  .grid.has-focus { grid-template-columns: repeat(3, 1fr); }
+  .tile { position: relative; aspect-ratio: 16/9; background: #000; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; }
+  .tile.focused { grid-column: 1/-1; order: -1; border-color: var(--accent); }
+  .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile.focused video { object-fit: contain; }
+  .tile::after { content: ''; position: absolute; inset: 0; border: 3px solid transparent; border-radius: 8px; pointer-events: none; transition: border-color 0.2s; }
+  .tile.sound::after { border-color: var(--accent3); }
+  .tile.motion::after { border-color: var(--accent2); }
+  .tile-label { position: absolute; top: 6px; left: 6px; max-width: calc(100% - 12px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.6); color: var(--text); font-family: var(--mono); font-size: 0.65rem; padding: 2px 6px; border-radius: 3px; }
+  .has-focus .tile:not(.focused) .tile-label { font-size: 0.55rem; top: 3px; left: 3px; }
+  .tile.rec .tile-label::before { content: '● REC  '; color: var(--accent2); }
+  .tile-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; font-family: var(--mono); font-size: 0.65rem; color: var(--dim); background: rgba(0,0,0,0.65); }
+  .has-focus .tile:not(.focused) .tile-state { font-size: 0.5rem; padding: 4px; }
+  .tile.live .tile-state { display: none; }
+  .tile-meter { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent3); transition: width 0.15s; }
+  .grid-empty { text-align: center; font-family: var(--mono); font-size: 0.72rem; color: var(--dim); padding: 36px 16px; border: 1px dashed var(--border); border-radius: 10px; line-height: 1.6; }
+
+  .talk-btn { width: 100%; margin-top: 12px; padding: 24px; border: 2px solid var(--accent); border-radius: 10px; background: var(--surface); color: var(--accent); font-family: var(--mono); font-size: 0.95rem; letter-spacing: 2px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  .talk-btn.on { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+  .cam-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .cam-row:last-child { border-bottom: none; }
+  .cam-row-name { font-size: 0.9rem; }
+  .cam-row-sub { font-family: var(--mono); font-size: 0.62rem; color: var(--dim); margin-top: 2px; }
+
+  .clips-list { display: flex; flex-direction: column; gap: 8px; }
+  .clip-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 0.68rem; }
+  .clip-name { color: var(--text); word-break: break-all; }
   .clip-meta { color: var(--dim); font-size: 0.6rem; }
-  .clip-dl {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 5px 10px;
-    color: var(--accent);
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .clip-dl:hover { background: rgba(0,229,255,0.1); }
+  .empty-state { text-align: center; font-family: var(--mono); font-size: 0.7rem; color: var(--dim); padding: 30px; }
 
-  .empty-state {
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--dim);
-    padding: 30px;
-  }
-
-  .setting-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .setting-row:last-child { border-bottom: none; }
-  .setting-label { font-size: 0.85rem; color: var(--text); }
-  .setting-sub { font-family: var(--mono); font-size: 0.65rem; color: var(--dim); margin-top: 2px; }
-
-  .section-head {
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin: 16px 0 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-head::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  #motionCanvas { display: none; }
-
-  .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 20px;
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    color: var(--accent);
-    z-index: 10000;
-    transition: transform 0.3s;
-    white-space: nowrap;
-  }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(120px); max-width: 90vw; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; font-family: var(--mono); font-size: 0.75rem; color: var(--accent); z-index: 10000; transition: transform 0.3s; }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 24px; z-index: 10001; }
+  .modal.show { display: flex; }
+  .modal-box { width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 22px; }
+  .modal-title { font-family: var(--mono); color: var(--accent); font-size: 1rem; letter-spacing: 2px; margin-bottom: 10px; }
+  .modal-box .input-field { width: 100%; margin: 14px 0; text-align: center; letter-spacing: 8px; font-size: 1.4rem; }
+
+  .dim { position: fixed; inset: 0; background: #000; z-index: 10002; display: none; align-items: flex-end; justify-content: center; padding-bottom: 40px; font-family: var(--mono); font-size: 0.65rem; color: #1c2a33; }
+  .dim.show { display: flex; }
+
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo">
-    <div class="logo-icon"></div>
-    SECURECAM
-  </div>
-  <div class="status-bar">
-    <span><span class="status-dot" id="connDot"></span><span id="connStatus">OFFLINE</span></span>
-  </div>
+  <div class="logo"><div class="logo-icon"></div>SECURECAM</div>
+  <div class="status-bar"><span class="status-dot" id="connDot"></span><span id="connStatus">OFFLINE</span></div>
 </div>
 
 <div class="mode-selector">
-  <button class="mode-btn active" onclick="setMode('camera')">📷 CAMERA</button>
-  <button class="mode-btn" onclick="setMode('viewer')">👁 VIEWER</button>
-  <button class="mode-btn" onclick="setMode('clips')">🎞 CLIPS</button>
+  <button class="mode-btn" data-mode="camera" onclick="setMode('camera')">📷 CAMERA</button>
+  <button class="mode-btn" data-mode="viewer" onclick="setMode('viewer')">👁 VIEWER</button>
+  <button class="mode-btn" data-mode="clips" onclick="setMode('clips')">🎞 CLIPS</button>
+  <button class="mode-btn" data-mode="settings" onclick="setMode('settings')">⚙</button>
 </div>
 
 <!-- CAMERA PANEL -->
-<div class="panel active" id="panel-camera">
-
+<div class="panel" id="panel-camera">
   <div class="cam-feed">
     <video id="localVideo" autoplay muted playsinline></video>
     <div class="cam-overlay">
-      <div class="corner corner-tl"></div>
-      <div class="corner corner-tr"></div>
-      <div class="corner corner-bl"></div>
-      <div class="corner corner-br"></div>
-      <div class="motion-alert" id="motionAlert"></div>
-      <div class="correct-flash" id="camCorrectFlash"></div>
-      <div class="rec-badge" id="recBadge"><span class="rec-dot"></span>REC</div>
+      <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+      <div class="badge" id="talkBadge">🔊 VIEWER TALKING</div>
       <div class="timestamp" id="camTimestamp">--:--:--</div>
     </div>
   </div>
 
-  <div class="section-head">YOUR DEVICE ID</div>
-  <div class="info-card">
-    <div class="info-label">Share this code with your viewer phone</div>
-    <div class="info-value peer-id-display" id="myPeerId">----</div>
+  <div class="section-head">THIS CAMERA</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">Camera code</div>
+      <div class="info-value peer-id-display" id="myCode">----</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Status</div>
+      <div class="info-value" id="camViewers" style="font-size:0.8rem">Not started</div>
+      <div class="info-label" id="camWake" style="margin:6px 0 0">Screen: —</div>
+    </div>
+  </div>
+  <div class="info-card" style="margin-top:10px">
+    <div class="info-label">Camera name (shown on the viewer)</div>
+    <input class="input-field" id="camName" maxlength="24" placeholder="e.g. Ella's room">
   </div>
 
-  <div class="section-head">CAMERA CONTROLS</div>
+  <div class="section-head">CONTROLS</div>
   <div class="controls">
     <button class="btn success" id="startCamBtn" onclick="startCamera()">▶ START CAM</button>
     <button class="btn danger" id="stopCamBtn" onclick="stopCamera()" disabled>■ STOP</button>
-    <button class="btn full" id="flipBtn" onclick="flipCamera()">⟳ FLIP CAMERA</button>
+    <button class="btn" id="flipBtn" onclick="flipCamera()">⟳ FLIP</button>
+    <button class="btn" id="dimBtn" onclick="dimScreen()">◐ DIM SCREEN</button>
   </div>
+  <p class="help">Keep Chrome open and the phone plugged in. The screen stays on while streaming; use Dim Screen to black it out and save battery.</p>
 
   <div class="section-head">ACTIVITY LOG</div>
-  <div class="log" id="camLog">
-    <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to start...</span></div>
-  </div>
+  <div class="log" id="camLog"></div>
 </div>
 
 <!-- VIEWER PANEL -->
 <div class="panel" id="panel-viewer">
+  <div class="grid" id="grid"></div>
+  <div class="grid-empty" id="gridEmpty">No cameras yet.<br>Add a camera's 4-letter code below.</div>
+  <p class="help" id="gridHint" style="display:none">Tap a camera to enlarge it, hear it, and talk through it.</p>
 
-  <div class="cam-feed">
-    <video id="remoteVideo" autoplay playsinline></video>
-    <div class="cam-overlay">
-      <div class="corner corner-tl"></div>
-      <div class="corner corner-tr"></div>
-      <div class="corner corner-bl"></div>
-      <div class="corner corner-br"></div>
-      <div class="motion-alert" id="remoteMotionAlert"></div>
-      <div class="rec-badge" id="viewerRecBadge"><span class="rec-dot"></span>REC</div>
-      <div class="timestamp" id="viewerTimestamp">--:--:--</div>
-    </div>
-    <div id="playOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:10;">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:1.2rem;color:#00e5ff;text-align:center;letter-spacing:2px;">STREAM READY</div>
-    </div>
-  </div>
-  <button id="playBtn" onclick="startViewing()" style="display:none;width:100%;margin-top:10px;padding:18px;background:#00e5ff;border:none;border-radius:8px;color:#000;font-family:'Share Tech Mono',monospace;font-size:1rem;letter-spacing:3px;cursor:pointer;font-weight:bold;">▶ START VIEWING</button>
-
-  <canvas id="motionCanvas"></canvas>
-
-  <!-- ── BARK CORRECTION ── -->
-  <div class="section-head">🔔 BARK CORRECTION</div>
-  <div class="info-card full bark-card">
-    <div class="info-label">Manual — plays correction sound on camera phone</div>
-    <button class="btn full warn-btn" id="correctBtn" onclick="sendCorrection()" disabled>
-      🔔 &nbsp;CORRECT
-    </button>
-
-    <div class="bark-toggle-row">
-      <span class="bark-toggle-label">AUTO MODE (bark detection)</span>
-      <div class="toggle" id="autoToggle" onclick="toggleAuto()"></div>
-    </div>
-
-    <div class="info-label" style="margin-top:10px;">MIC VOLUME (from camera)</div>
-    <div class="vol-meter"><div class="vol-bar" id="volBar"></div></div>
-
-    <div class="info-label" style="margin-top:10px;">AUTO TRIGGER THRESHOLD — lower = more sensitive</div>
-    <div class="slider-row">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">LOW</span>
-      <input type="range" id="barkSlider" min="5" max="90" value="40"
-             style="accent-color: var(--accent4);">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">HIGH</span>
-    </div>
-
-    <div class="info-label" style="margin-top:10px;">COOLDOWN (seconds between triggers)</div>
-    <div class="slider-row">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">3s</span>
-      <input type="range" id="cooldownSlider" min="3" max="30" value="8"
-             style="accent-color: var(--accent4);">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4)">30s</span>
-    </div>
-    <div class="cooldown-bar"><div class="cooldown-fill" id="cooldownFill"></div></div>
-  </div>
-
-  <div class="section-head">CONNECT TO CAMERA</div>
-  <div class="info-card full">
-    <div class="info-label">Enter the camera phone's 4-letter code</div>
-    <div class="connect-row">
-      <input class="input-field" id="remotePeerId" maxlength="4" placeholder="ABCD" oninput="this.value = this.value.toUpperCase()">
-      <button class="btn" id="connectBtn" onclick="connectToCamera()">CONNECT</button>
+  <div id="focusBar" style="display:none">
+    <button class="talk-btn" id="talkBtn">🎙 HOLD TO TALK</button>
+    <div class="controls">
+      <button class="btn success" id="startRecBtn" onclick="startRecording()">⏺ RECORD</button>
+      <button class="btn danger" id="stopRecBtn" onclick="stopRecording()" disabled>■ STOP REC</button>
+      <button class="btn full" onclick="setFocus(null)">▦ ALL CAMERAS</button>
     </div>
   </div>
 
-  <div class="section-head">MOTION SENSITIVITY</div>
-  <div class="info-card full">
-    <div class="info-label">Threshold — lower = more sensitive</div>
-    <div class="slider-row">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent)">LOW</span>
-      <input type="range" id="motionSlider" min="5" max="50" value="20">
-      <span style="font-family:var(--mono);font-size:0.7rem;color:var(--accent)">HIGH</span>
+  <div class="section-head">MY CAMERAS</div>
+  <div class="info-card">
+    <div id="camList"></div>
+    <div class="row" style="margin-top:10px">
+      <input class="input-field code" id="addCode" maxlength="4" placeholder="CODE" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn" onclick="addCam()">＋ ADD</button>
     </div>
   </div>
 
-  <div class="section-head">VIEWER CONTROLS</div>
-  <div class="controls">
-    <button class="btn success" id="startRecBtn" onclick="startRecording()" disabled>⏺ RECORD</button>
-    <button class="btn danger" id="stopRecBtn" onclick="stopRecording()" disabled>■ STOP REC</button>
-    <button class="btn full danger" id="disconnectBtn" onclick="disconnectViewer()" disabled>✕ DISCONNECT</button>
+  <div class="section-head">ALERTS</div>
+  <div class="info-card">
+    <div class="info-label">Motion sensitivity</div>
+    <div class="slider-row"><span>LESS</span><input type="range" id="motionSlider" min="5" max="50" value="30"><span>MORE</span></div>
+    <div class="info-label" style="margin-top:14px">Sound sensitivity (whining, barking)</div>
+    <div class="slider-row"><span>LESS</span><input type="range" id="soundSlider" min="5" max="55" value="30"><span>MORE</span></div>
   </div>
 
   <div class="section-head">ACTIVITY LOG</div>
-  <div class="log" id="viewerLog">
-    <div class="log-entry"><span class="time">--:--</span><span class="msg">Waiting to connect...</span></div>
-  </div>
+  <div class="log" id="viewerLog"></div>
 </div>
 
 <!-- CLIPS PANEL -->
 <div class="panel" id="panel-clips">
   <div class="section-head">SAVED RECORDINGS</div>
-  <div class="clips-list" id="clipsList">
-    <div class="empty-state">No recordings yet.<br>Connect as Viewer and hit Record.</div>
+  <div class="clips-list" id="clipsList"></div>
+  <p class="help">Clips are kept only until this page is closed. Tap Save to download them.</p>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="panel" id="panel-settings">
+  <div class="section-head">PIN</div>
+  <div class="info-card">
+    <div class="info-label">Use the same PIN on every phone. Cameras only accept viewers that know it.</div>
+    <div class="row">
+      <input class="input-field" id="pinChange" inputmode="numeric" maxlength="8" placeholder="New PIN (4–8 digits)">
+      <button class="btn" onclick="changePin()">SAVE</button>
+    </div>
+  </div>
+
+  <div class="section-head">TURN RELAY (OPTIONAL)</div>
+  <div class="info-card">
+    <div class="info-label">Helps when phones are on mobile data or strict Wi-Fi. Paste your Metered.ca credentials URL (…/api/v1/turn/credentials?apiKey=…) or an iceServers JSON array.</div>
+    <input class="input-field" id="turnInput" placeholder="https://yourapp.metered.live/api/v1/turn/credentials?apiKey=..." style="font-size:0.75rem">
+    <div class="controls">
+      <button class="btn" onclick="saveTurn()">SAVE</button>
+      <button class="btn" onclick="testTurn()">TEST</button>
+    </div>
+    <p class="help">Add it on every phone, then reload the app.</p>
+  </div>
+
+  <div class="section-head">CAMERA CODE</div>
+  <div class="info-card">
+    <div class="info-label">This phone's camera code stays the same across restarts. Only change it if it's stuck or you think someone else has it.</div>
+    <button class="btn full" onclick="newCode()">GENERATE NEW CODE</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<div class="modal" id="pinModal">
+  <div class="modal-box">
+    <div class="modal-title">SET YOUR PIN</div>
+    <p class="help">Pick 4–8 digits. Enter the same PIN on every phone you use with SecureCam, cameras and viewers alike.</p>
+    <input class="input-field" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••">
+    <button class="btn full success" onclick="savePinFromModal()">SAVE PIN</button>
+  </div>
+</div>
+
+<div class="dim" id="dim" onclick="undim()">Streaming. Tap to wake.</div>
+
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-let peer, localStream, currentCall, mediaRecorder;
-let dataConn = null;          // PeerJS data channel (viewer → camera commands)
-let facingMode = 'environment';
-let clips = [];
-let motionInterval, motionActive = false;
-let prevImageData = null;
+// ── Storage & utilities ────────────────────────────────────────────────────
+const LS = {
+  get(k, d = null) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  json(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+};
+const $ = id => document.getElementById(id);
+const PREFIX = 'securecam-';
+const CHARS = 'ACDEFGHJKLMNPQRTUVWXYZ234679';
+function genCode() { let c = ''; for (let i = 0; i < 4; i++) c += CHARS[Math.floor(Math.random() * CHARS.length)]; return c; }
 
-// Bark correction state
-let autoModeOn = false;
-let barkCooldown = false;
-let cooldownTimerInterval = null;
-let audioAnalyser = null;
-let audioContext = null;
-let volInterval = null;
+let PIN = LS.get('sc_pin');
+let myCode = LS.get('sc_code');
+if (!myCode) { myCode = genCode(); LS.set('sc_code', myCode); }
+let myName = LS.get('sc_name', 'Camera ' + myCode);
+let currentMode = 'camera';
 
-// Correction audio (camera side)
-let correctionAudio = null;
-
-// ── Utilities ──────────────────────────────────────────────────────────────
-function ts() {
-  return new Date().toLocaleTimeString('en-GB', { hour12: false });
-}
-
+function ts() { return new Date().toLocaleTimeString('en-GB', { hour12: false }); }
 function log(panelId, msg, type = '') {
-  const el = document.getElementById(panelId);
-  const entry = document.createElement('div');
-  entry.className = 'log-entry ' + type;
-  entry.innerHTML = `<span class="time">${ts()}</span><span class="msg">${msg}</span>`;
-  el.appendChild(entry);
+  const el = $(panelId);
+  const e = document.createElement('div'); e.className = 'log-entry ' + type;
+  const t = document.createElement('span'); t.className = 'time'; t.textContent = ts();
+  const m = document.createElement('span'); m.className = 'msg'; m.textContent = msg;
+  e.append(t, m); el.appendChild(e);
+  while (el.children.length > 150) el.firstChild.remove();
   el.scrollTop = el.scrollHeight;
 }
-
+let toastTimer;
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
+function setHeader(text, cls) { $('connDot').className = 'status-dot' + (cls ? ' ' + cls : ''); $('connStatus').textContent = text; }
+function send(conn, msg) { try { if (conn && conn.open) conn.send(msg); } catch (e) {} }
+function nowStr() { return new Date().toISOString().replace('T', '_').substring(0, 19).replace(/:/g, '-'); }
 
-function setStatus(state) {
-  const dot = document.getElementById('connDot');
-  const txt = document.getElementById('connStatus');
-  dot.className = 'status-dot';
-  if (state === 'live') { dot.classList.add('live'); txt.textContent = 'LIVE'; }
-  else if (state === 'warn') { dot.classList.add('warn'); txt.textContent = 'CONNECTING'; }
-  else { txt.textContent = 'OFFLINE'; }
-}
+setInterval(() => { $('camTimestamp').textContent = ts(); }, 1000);
 
-function nowStr() {
-  return new Date().toISOString().replace('T', '_').substring(0, 19).replace(/:/g, '-');
-}
-
-// ── Timestamp tick ─────────────────────────────────────────────────────────
-setInterval(() => {
-  const t = ts();
-  document.getElementById('camTimestamp').textContent = t;
-  document.getElementById('viewerTimestamp').textContent = t;
-}, 1000);
-
-// ── Mode switching ─────────────────────────────────────────────────────────
-function setMode(mode) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + mode).classList.add('active');
-  event.target.classList.add('active');
-}
-
-// ── PeerJS init ────────────────────────────────────────────────────────────
-function genId() {
-  const chars = 'ACDEFGHJKLMNPQRTUVWXYZ234679';
-  let id = '';
-  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
-}
-
-let keepAliveTimer = null;
-
-function initPeer() {
-  const id = genId();
-  peer = new Peer(id, {
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-      ]
-    }
-  });
-
-  peer.on('open', (pid) => {
-    document.getElementById('myPeerId').textContent = pid;
-    log('camLog', 'Peer ID ready: ' + pid, 'ok');
-    setStatus('');
-    clearInterval(keepAliveTimer);
-    keepAliveTimer = setInterval(() => {
-      if (peer && peer.disconnected) {
-        peer.reconnect();
-        log('camLog', 'Reconnecting to server...', '');
-      }
-    }, 20000);
-  });
-
-  peer.on('disconnected', () => {
-    log('camLog', 'Server disconnected — reconnecting...', 'err');
-    log('viewerLog', 'Server disconnected — reconnecting...', 'err');
-    peer.reconnect();
-  });
-
-  peer.on('error', (err) => {
-    log('camLog', 'Peer error: ' + err.type, 'err');
-    log('viewerLog', 'Peer error: ' + err.type, 'err');
-    setStatus('warn');
-    if (err.type === 'peer-unavailable') {
-      log('viewerLog', 'Camera not found — check code and try again', 'err');
-    }
-  });
-
-  // ── Incoming call (camera side) ──
-  peer.on('call', (call) => {
-    log('camLog', 'Incoming call from viewer...', 'ok');
-    if (localStream) {
-      call.answer(localStream);
-      currentCall = call;
-      setStatus('live');
-      log('camLog', 'Viewer connected — streaming live', 'ok');
-      call.on('close', () => {
-        setStatus('');
-        log('camLog', 'Viewer disconnected', '');
-      });
-    } else {
-      log('camLog', 'Call received but camera not started yet', 'err');
-      toast('⚠️ Start camera first');
-    }
-  });
-
-  // ── Incoming data connection (camera side — receives CORRECT command) ──
-  peer.on('connection', (conn) => {
-    log('camLog', 'Command channel open', 'ok');
-    conn.on('data', (data) => {
-      if (data === 'CORRECT') {
-        playCorrection();
-      }
-    });
-  });
-}
-
-// ── Camera ─────────────────────────────────────────────────────────────────
-async function startCamera() {
+// ── ICE / TURN ─────────────────────────────────────────────────────────────
+let iceCache = null;
+async function getIceServers() {
+  const base = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+  const t = (LS.get('sc_turn', '') || '').trim();
+  if (!t) return base;
+  if (iceCache) return iceCache;
   try {
-    if (localStream) stopCamera();
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: true
-    });
-    document.getElementById('localVideo').srcObject = localStream;
-    document.getElementById('startCamBtn').disabled = true;
-    document.getElementById('stopCamBtn').disabled = false;
-    document.getElementById('flipBtn').disabled = false;
-    log('camLog', 'Camera started (' + facingMode + ')', 'ok');
-    toast('📷 Camera active');
-
-    // Pre-load correction audio and unlock for mobile
-    correctionAudio = new Audio('collar.m4a');
-    correctionAudio.load();
-    // Unlock audio on mobile — must happen inside a user gesture (startCamera tap)
-    correctionAudio.play().then(() => {
-      correctionAudio.pause();
-      correctionAudio.currentTime = 0;
-    }).catch(() => {});
+    let extra;
+    if (t.startsWith('[') || t.startsWith('{')) extra = JSON.parse(t);
+    else { const r = await fetch(t); extra = await r.json(); }
+    if (!Array.isArray(extra)) extra = extra.iceServers || [extra];
+    iceCache = base.concat(extra);
+    return iceCache;
   } catch (e) {
+    toast('⚠️ TURN setup failed, using direct only');
+    return base;
+  }
+}
+
+// ── Mode & header ──────────────────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + mode));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  if (mode === 'camera' || mode === 'viewer') LS.set('sc_mode', mode);
+  if (mode === 'viewer') ensureViewer();
+  if (mode === 'settings') $('turnInput').value = LS.get('sc_turn', '');
+  updateHeader();
+}
+function updateHeader() {
+  if (currentMode === 'camera') {
+    if (!localStream) setHeader('OFFLINE', '');
+    else if (viewers.size) setHeader('LIVE ' + viewers.size + ' VIEWER' + (viewers.size > 1 ? 'S' : ''), 'live');
+    else setHeader('READY', 'warn');
+  } else if (currentMode === 'viewer') {
+    const live = cams.filter(c => rt[c.code] && rt[c.code].state === 'live').length;
+    if (!cams.length) setHeader('NO CAMERAS', '');
+    else setHeader(live + '/' + cams.length + ' LIVE', live ? 'live' : 'warn');
+  }
+}
+
+// ── PIN ────────────────────────────────────────────────────────────────────
+function validPin(p) { return /^\d{4,8}$/.test(p); }
+function requirePin() { if (PIN) return true; $('pinModal').classList.add('show'); setTimeout(() => $('pinInput').focus(), 100); return false; }
+function savePinFromModal() {
+  const p = $('pinInput').value.trim();
+  if (!validPin(p)) { toast('PIN must be 4–8 digits'); return; }
+  PIN = p; LS.set('sc_pin', p);
+  $('pinModal').classList.remove('show');
+  toast('🔒 PIN saved');
+  if (currentMode === 'viewer') ensureViewer();
+}
+function changePin() {
+  const p = $('pinChange').value.trim();
+  if (!validPin(p)) { toast('PIN must be 4–8 digits'); return; }
+  PIN = p; LS.set('sc_pin', p); $('pinChange').value = '';
+  toast('🔒 PIN updated — set the same PIN on your other phones');
+  // Cameras: make everyone re-authenticate. Viewers: reconnect with new PIN.
+  for (const [id, v] of viewers) { try { v.conn.close(); } catch (e) {} dropViewer(id); }
+  cams.forEach(c => { const r = getRt(c.code); r.retryMs = 0; if (viewPeer) connectCam(c.code); });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CAMERA SIDE
+// ══════════════════════════════════════════════════════════════════════════
+let camPeer = null, localStream = null;
+let facingMode = LS.get('sc_facing', 'environment');
+const viewers = new Map(); // viewerPeerId -> { conn, call, quality, talk, audio, talking }
+let failCount = 0, lockUntil = 0, wakeLock = null, pingTimer = null, audioBlocked = false;
+
+async function ensureCamPeer() {
+  if (camPeer && !camPeer.destroyed) return;
+  viewers.clear();
+  const iceServers = await getIceServers();
+  camPeer = new Peer(PREFIX + myCode, { config: { iceServers } });
+  camPeer.on('open', () => { log('camLog', 'Online with code ' + myCode, 'ok'); updateCamStatus(); });
+  camPeer.on('disconnected', () => {
+    log('camLog', 'Server link lost, reconnecting…', 'err');
+    setTimeout(() => { if (camPeer && !camPeer.destroyed && camPeer.disconnected) camPeer.reconnect(); }, 2000);
+  });
+  camPeer.on('error', err => {
+    if (err.type === 'unavailable-id') {
+      log('camLog', 'Code still held by server, retrying in 5s…', 'err');
+      try { camPeer.destroy(); } catch (e) {}
+      camPeer = null; setTimeout(ensureCamPeer, 5000); return;
+    }
+    log('camLog', 'Error: ' + err.type, 'err');
+  });
+  camPeer.on('connection', handleViewerConn);
+  camPeer.on('call', handleTalkCall);
+}
+
+// Keepalive for the camera's server link
+setInterval(() => {
+  if (!localStream) return;
+  if (!camPeer || camPeer.destroyed) { camPeer = null; ensureCamPeer(); }
+  else if (camPeer.disconnected) camPeer.reconnect();
+}, 10000);
+
+function handleViewerConn(conn) {
+  conn.on('data', msg => onViewerMsg(conn, msg));
+  conn.on('close', () => dropViewer(conn.peer, conn));
+  conn.on('error', () => dropViewer(conn.peer, conn));
+  setTimeout(() => { const v = viewers.get(conn.peer); if (!v || v.conn !== conn) try { conn.close(); } catch (e) {} }, 15000);
+}
+
+function onViewerMsg(conn, msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'hello') {
+    if (Date.now() < lockUntil) { send(conn, { type: 'auth', ok: false, reason: 'locked' }); setTimeout(() => conn.close(), 500); return; }
+    if (!PIN || String(msg.pin) !== PIN) {
+      failCount++;
+      if (failCount >= 5) { lockUntil = Date.now() + 5 * 60000; failCount = 0; log('camLog', 'Too many wrong PINs, locked for 5 minutes', 'err'); }
+      else log('camLog', 'Viewer rejected: wrong PIN', 'err');
+      send(conn, { type: 'auth', ok: false, reason: 'pin' }); setTimeout(() => conn.close(), 500); return;
+    }
+    failCount = 0;
+    const old = viewers.get(conn.peer);
+    if (old && old.conn !== conn) { try { old.call && old.call.close(); } catch (e) {} try { old.conn.close(); } catch (e) {} }
+    viewers.set(conn.peer, { conn, call: null, quality: 'low', talk: null, audio: null, talking: false });
+    send(conn, { type: 'auth', ok: true, name: myName, streaming: !!localStream });
+    log('camLog', 'Viewer connected', 'ok');
+    if (localStream) callViewer(conn.peer);
+    updateCamStatus();
+    return;
+  }
+  const v = viewers.get(conn.peer);
+  if (!v || v.conn !== conn) return;
+  if (msg.type === 'quality') { v.quality = msg.level === 'high' ? 'high' : 'low'; applyQuality(v); }
+  else if (msg.type === 'talk') { v.talking = !!msg.on; setTalkBadge(); }
+}
+
+function dropViewer(id, conn) {
+  const v = viewers.get(id);
+  if (!v || (conn && v.conn !== conn)) return;
+  try { v.call && v.call.close(); } catch (e) {}
+  try { v.talk && v.talk.close(); } catch (e) {}
+  if (v.audio) { v.audio.srcObject = null; v.audio.remove(); }
+  viewers.delete(id);
+  log('camLog', 'Viewer left');
+  updateCamStatus(); setTalkBadge();
+}
+
+function callViewer(id) {
+  const v = viewers.get(id);
+  if (!v || !localStream || !camPeer) return;
+  try { v.call && v.call.close(); } catch (e) {}
+  const call = camPeer.call(id, localStream, { metadata: { name: myName } });
+  if (!call) return;
+  v.call = call;
+  const pc = call.peerConnection;
+  if (pc) pc.addEventListener('iceconnectionstatechange', () => {
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') applyQuality(v);
+  });
+  call.on('close', () => { if (v.call === call) v.call = null; });
+  call.on('error', () => { if (v.call === call) v.call = null; });
+}
+
+// Grid tiles get a small, cheap stream; the enlarged camera gets full quality
+async function applyQuality(v) {
+  const pc = v.call && v.call.peerConnection;
+  if (!pc) return;
+  const hi = v.quality === 'high';
+  for (const s of pc.getSenders()) {
+    if (!s.track || s.track.kind !== 'video') continue;
+    try {
+      const p = s.getParameters();
+      if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+      p.encodings[0].scaleResolutionDownBy = hi ? 1 : 3;
+      p.encodings[0].maxBitrate = hi ? 1500000 : 250000;
+      p.encodings[0].maxFramerate = hi ? 30 : 12;
+      await s.setParameters(p);
+    } catch (e) {}
+  }
+}
+
+// Viewer's voice arrives as a separate audio-only call
+function handleTalkCall(call) {
+  const v = viewers.get(call.peer);
+  if (!v || !call.metadata || call.metadata.type !== 'talk') { try { call.close(); } catch (e) {} return; }
+  try { v.talk && v.talk.close(); } catch (e) {}
+  v.talk = call;
+  call.answer();
+  call.on('stream', s => {
+    if (!v.audio) { v.audio = document.createElement('audio'); v.audio.autoplay = true; v.audio.setAttribute('playsinline', ''); document.body.appendChild(v.audio); }
+    v.audio.srcObject = s; v.audio.volume = 1;
+    v.audio.play().catch(() => { audioBlocked = true; log('camLog', 'Tap this screen once so the speaker can play', 'err'); toast('🔊 Tap screen to enable speaker'); });
+    log('camLog', 'Talk-back ready', 'ok');
+  });
+  call.on('close', () => { if (v.talk === call) { v.talk = null; v.talking = false; setTalkBadge(); } });
+}
+
+function setTalkBadge() {
+  const on = [...viewers.values()].some(v => v.talking);
+  $('talkBadge').classList.toggle('show', on);
+}
+
+function camConstraints() {
+  return {
+    video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+    audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true }
+  };
+}
+
+async function startCamera() {
+  if (!requirePin()) return;
+  try {
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    localStream = await navigator.mediaDevices.getUserMedia(camConstraints());
+    $('localVideo').srcObject = localStream;
+    $('startCamBtn').disabled = true; $('stopCamBtn').disabled = false;
+    log('camLog', 'Camera started (' + facingMode + ')', 'ok');
+    LS.set('sc_camActive', '1');
+    await ensureCamPeer();
+    for (const [id, v] of viewers) { send(v.conn, { type: 'streaming', on: true }); callViewer(id); }
+    requestWakeLock();
+    startPing();
+    updateCamStatus();
+    toast('📷 Camera live, code ' + myCode);
+  } catch (e) {
+    localStream = null;
     log('camLog', 'Camera error: ' + e.message, 'err');
-    toast('❌ Camera access denied');
+    toast('❌ Camera/mic access denied');
   }
 }
 
 function stopCamera() {
-  if (localStream) {
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = null;
-    document.getElementById('localVideo').srcObject = null;
-  }
-  if (currentCall) { currentCall.close(); currentCall = null; }
-  document.getElementById('startCamBtn').disabled = false;
-  document.getElementById('stopCamBtn').disabled = true;
-  setStatus('');
-  log('camLog', 'Camera stopped', '');
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  $('localVideo').srcObject = null;
+  for (const v of viewers.values()) { send(v.conn, { type: 'streaming', on: false }); try { v.call && v.call.close(); } catch (e) {} v.call = null; }
+  $('startCamBtn').disabled = false; $('stopCamBtn').disabled = true;
+  LS.set('sc_camActive', '0');
+  clearInterval(pingTimer);
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  log('camLog', 'Camera stopped');
+  updateCamStatus();
 }
 
 async function flipCamera() {
   facingMode = facingMode === 'environment' ? 'user' : 'environment';
-  if (localStream) await startCamera();
-}
-
-// ── Play correction sound (camera phone) ──────────────────────────────────
-function playCorrection() {
-  const flash = document.getElementById('camCorrectFlash');
-  flash.classList.add('active');
-  setTimeout(() => flash.classList.remove('active'), 800);
-  log('camLog', '🔔 Correction sound played', 'bark');
-
-  if (correctionAudio) {
-    correctionAudio.currentTime = 0;
-    correctionAudio.play().catch(e => {
-      log('camLog', 'Audio error: ' + e.message, 'err');
-    });
-  } else {
-    // Fallback: generate a sharp beep via Web Audio API
-    playFallbackBeep();
+  LS.set('sc_facing', facingMode);
+  if (!localStream) { toast('Will use ' + (facingMode === 'user' ? 'front' : 'back') + ' camera'); return; }
+  const old = localStream.getVideoTracks()[0];
+  if (old) { old.stop(); localStream.removeTrack(old); }
+  try {
+    const vs = await navigator.mediaDevices.getUserMedia({ video: camConstraints().video });
+    const nt = vs.getVideoTracks()[0];
+    localStream.addTrack(nt);
+    for (const v of viewers.values()) {
+      const pc = v.call && v.call.peerConnection; if (!pc) continue;
+      for (const s of pc.getSenders()) if (s.track && s.track.kind === 'video') await s.replaceTrack(nt).catch(() => {});
+      applyQuality(v);
+    }
+    $('localVideo').srcObject = localStream;
+    log('camLog', 'Switched to ' + facingMode + ' camera', 'ok');
+  } catch (e) {
+    log('camLog', 'Flip failed: ' + e.message + ', restarting camera', 'err');
+    startCamera();
   }
 }
 
-function playFallbackBeep() {
+function startPing() {
+  clearInterval(pingTimer);
+  pingTimer = setInterval(() => { for (const v of viewers.values()) send(v.conn, { type: 'ping' }); }, 5000);
+}
+
+async function requestWakeLock() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(2800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.8, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.2);
-  } catch(e) {}
+    if ('wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; updateCamStatus(); });
+    }
+  } catch (e) { log('camLog', 'Could not keep screen on: ' + e.message, 'err'); }
+  updateCamStatus();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && localStream) requestWakeLock();
+});
+
+function updateCamStatus() {
+  $('camViewers').textContent = !localStream ? 'Not started' : viewers.size ? viewers.size + ' viewer' + (viewers.size > 1 ? 's' : '') + ' watching' : 'Waiting for viewer';
+  $('camWake').textContent = 'Screen: ' + (!localStream ? '—' : wakeLock ? 'kept awake' : 'may sleep');
+  updateHeader();
 }
 
-// ── Viewer ─────────────────────────────────────────────────────────────────
-function forcePlay() {
-  const video = document.getElementById('remoteVideo');
-  video.muted = true;
-  video.play().then(() => {
-    video.muted = false;
-    document.getElementById('playOverlay').style.display = 'none';
-    log('viewerLog', 'Playback started', 'ok');
-  }).catch(e => {
-    log('viewerLog', 'Play error: ' + e.message, 'err');
-  });
+function dimScreen() { if (!localStream) { toast('Start the camera first'); return; } $('dim').classList.add('show'); }
+function undim() { $('dim').classList.remove('show'); }
+
+// Any tap on the camera phone retries blocked talk-back audio
+document.addEventListener('pointerdown', () => {
+  if (audioBlocked) { audioBlocked = false; for (const v of viewers.values()) if (v.audio) v.audio.play().catch(() => {}); }
+  unlockAudio();
+});
+
+$('camName').addEventListener('change', () => {
+  myName = $('camName').value.trim().slice(0, 24) || 'Camera ' + myCode;
+  $('camName').value = myName; LS.set('sc_name', myName);
+  for (const v of viewers.values()) send(v.conn, { type: 'name', name: myName });
+  toast('Name saved');
+});
+
+function newCode() {
+  if (!confirm('Generate a new code? Viewers will need to add this camera again.')) return;
+  myCode = genCode(); LS.set('sc_code', myCode); $('myCode').textContent = myCode;
+  if (camPeer) { try { camPeer.destroy(); } catch (e) {} camPeer = null; viewers.clear(); }
+  if (localStream) ensureCamPeer();
+  toast('New code: ' + myCode);
 }
 
-function startViewing() {
-  const vid = document.getElementById('remoteVideo');
-  const btn = document.getElementById('playBtn');
-  vid.muted = false;
-  vid.play().then(() => {
-    btn.style.display = 'none';
-    document.getElementById('playOverlay').style.display = 'none';
-    log('viewerLog', 'Playback started', 'ok');
-  }).catch(e => {
-    log('viewerLog', 'Play error: ' + e.message, 'err');
+// ══════════════════════════════════════════════════════════════════════════
+// VIEWER SIDE
+// ══════════════════════════════════════════════════════════════════════════
+let viewPeer = null;
+let cams = LS.json('sc_cams', []).filter(c => c && c.code);
+const rt = {}; // per-camera runtime state
+let focusCode = null, audioCtx = null;
+const STATE_TEXT = {
+  connecting: 'Connecting…', offline: 'Offline, retrying…', badpin: 'Wrong PIN. Tap to retry',
+  locked: 'Camera locked for a few minutes', paused: 'Camera paused', waiting: 'Starting video…', live: ''
+};
+
+function getRt(code) { return rt[code] || (rt[code] = { state: 'offline', retryMs: 0 }); }
+function nameOf(code) { const c = cams.find(x => x.code === code); return c ? c.name || code : code; }
+function saveCams() { LS.set('sc_cams', JSON.stringify(cams.map(c => ({ code: c.code, name: c.name })))); }
+
+async function ensureViewer() {
+  if (!requirePin()) return;
+  renderTiles(); renderCamList();
+  if (viewPeer && !viewPeer.destroyed) return;
+  const iceServers = await getIceServers();
+  if (viewPeer && !viewPeer.destroyed) return;
+  viewPeer = new Peer(PREFIX + 'v-' + Math.random().toString(36).slice(2, 10), { config: { iceServers } });
+  viewPeer.on('open', () => {
+    log('viewerLog', 'Viewer online', 'ok');
+    cams.forEach(c => { const r = getRt(c.code); if (!r.conn && !r.authed) connectCam(c.code); });
   });
+  viewPeer.on('disconnected', () => {
+    setTimeout(() => { if (viewPeer && !viewPeer.destroyed && viewPeer.disconnected) viewPeer.reconnect(); }, 2000);
+  });
+  viewPeer.on('error', err => {
+    if (err.type === 'peer-unavailable') {
+      const m = String(err.message || '').match(/securecam-([A-Z0-9]{4})\b/);
+      if (m && rt[m[1]]) { teardown(m[1]); setCamState(m[1], 'offline'); scheduleRetry(m[1]); }
+      return;
+    }
+    log('viewerLog', 'Error: ' + err.type, 'err');
+  });
+  viewPeer.on('call', onCamCall);
 }
 
-function connectToCamera() {
-  const rid = document.getElementById('remotePeerId').value.trim().toUpperCase();
-  if (rid.length < 4) { toast('Enter the 4-letter code'); return; }
+// Keepalive + heartbeat check
+setInterval(() => {
+  if (!viewPeer) return;
+  if (viewPeer.destroyed) { viewPeer = null; if (currentMode === 'viewer' || cams.length) ensureViewer(); return; }
+  if (viewPeer.disconnected) viewPeer.reconnect();
+  const now = Date.now();
+  for (const c of cams) {
+    const r = rt[c.code];
+    if (r && r.authed && now - (r.lastSeen || 0) > 16000) {
+      log('viewerLog', nameOf(c.code) + ': lost contact, reconnecting', 'err');
+      teardown(c.code); setCamState(c.code, 'offline'); r.retryMs = 0; scheduleRetry(c.code);
+    }
+  }
+}, 5000);
 
-  setStatus('warn');
-  log('viewerLog', 'Requesting camera to initiate call...', '');
-
-  // Open data channel to camera for sending CORRECT commands
-  dataConn = peer.connect(rid, { reliable: true });
-  dataConn.on('open', () => {
-    log('viewerLog', 'Command channel ready', 'ok');
+function connectCam(code) {
+  const r = getRt(code);
+  clearTimeout(r.retryTimer);
+  if (!cams.some(c => c.code === code)) return;
+  if (!viewPeer || viewPeer.destroyed || !viewPeer.open) { scheduleRetry(code); return; }
+  teardown(code);
+  setCamState(code, 'connecting');
+  const conn = viewPeer.connect(PREFIX + code, { reliable: true });
+  if (!conn) { scheduleRetry(code); return; }
+  r.conn = conn; r.authed = false;
+  conn.on('open', () => send(conn, { type: 'hello', pin: PIN }));
+  conn.on('data', msg => onCamMsg(code, conn, msg));
+  conn.on('close', () => {
+    if (r.conn !== conn) return;
+    teardown(code);
+    if (r.state !== 'badpin') { setCamState(code, 'offline'); scheduleRetry(code); }
   });
-  dataConn.on('error', (e) => {
-    log('viewerLog', 'Data channel error: ' + e, 'err');
-  });
+  conn.on('error', () => {});
+  r.authTimer = setTimeout(() => {
+    if (r.conn === conn && !r.authed) { teardown(code); setCamState(code, 'offline'); scheduleRetry(code); }
+  }, 15000);
+}
 
-  navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } })
-    .then((viewerStream) => {
-      log('viewerLog', 'Calling camera: ' + rid, '');
+function scheduleRetry(code, fixedMs) {
+  const r = getRt(code);
+  if (!cams.some(c => c.code === code)) return;
+  clearTimeout(r.retryTimer);
+  const delay = fixedMs || r.retryMs || 3000;
+  r.retryMs = Math.min(delay * 1.6, 30000);
+  r.retryTimer = setTimeout(() => connectCam(code), delay);
+}
 
-      const call = peer.call(rid, viewerStream);
+function teardown(code) {
+  const r = rt[code]; if (!r) return;
+  clearTimeout(r.authTimer);
+  const conn = r.conn, call = r.call;
+  r.conn = null; r.call = null; r.authed = false;
+  try { conn && conn.close(); } catch (e) {}
+  try { call && call.close(); } catch (e) {}
+  stopTalk(code);
+  clearVideo(code);
+}
 
-      if (!call) {
-        log('viewerLog', 'Call failed — check the code', 'err');
-        setStatus('');
-        viewerStream.getTracks().forEach(t => t.stop());
+function clearVideo(code) {
+  const r = rt[code]; if (!r) return;
+  if (focusCode === code && isRecording()) stopRecording();
+  if (r.video) r.video.srcObject = null;
+  r.stream = null; r.analyser = null; r.analyserStream = null; r.prev = null;
+  if (r.meterEl) r.meterEl.style.width = '0';
+}
+
+function onCamMsg(code, conn, msg) {
+  const r = getRt(code);
+  if (r.conn !== conn || !msg || typeof msg !== 'object') return;
+  r.lastSeen = Date.now();
+  switch (msg.type) {
+    case 'auth':
+      clearTimeout(r.authTimer);
+      if (!msg.ok) {
+        const locked = msg.reason === 'locked';
+        log('viewerLog', nameOf(code) + (locked ? ': camera locked after wrong PINs' : ': wrong PIN, check Settings'), 'err');
+        teardown(code); setCamState(code, locked ? 'locked' : 'badpin');
+        if (locked) scheduleRetry(code, 5 * 60000 + 5000);
         return;
       }
-
-      currentCall = call;
-
-      call.on('stream', (remoteStream) => {
-        const vid = document.getElementById('remoteVideo');
-        if (vid.srcObject) return;
-        viewerStream.getTracks().forEach(t => t.stop());
-        vid.srcObject = remoteStream;
-        document.getElementById('playBtn').style.display = 'block';
-        document.getElementById('playOverlay').style.display = 'flex';
-        setStatus('live');
-        log('viewerLog', 'Connected! Click ▶ START VIEWING button', 'ok');
-        toast('✅ Connected — click ▶ START VIEWING');
-        document.getElementById('startRecBtn').disabled = false;
-        document.getElementById('disconnectBtn').disabled = false;
-        document.getElementById('correctBtn').disabled = false;
-        startMotionDetection(remoteStream);
-        startVolumeMonitor(remoteStream);
-      });
-
-      call.on('close', () => {
-        setStatus('');
-        log('viewerLog', 'Camera disconnected', '');
-        stopMotionDetection();
-        stopVolumeMonitor();
-        document.getElementById('startRecBtn').disabled = true;
-        document.getElementById('disconnectBtn').disabled = true;
-        document.getElementById('correctBtn').disabled = true;
-      });
-
-      call.on('error', (e) => {
-        log('viewerLog', 'Stream error: ' + e, 'err');
-        setStatus('warn');
-      });
-
-      setTimeout(() => {
-        if (!document.getElementById('remoteVideo').srcObject) {
-          log('viewerLog', 'No response — is camera phone streaming?', 'err');
-          toast('⚠️ No response from camera');
-          setStatus('');
-          viewerStream.getTracks().forEach(t => t.stop());
-        }
-      }, 10000);
-    })
-    .catch((e) => {
-      log('viewerLog', 'Camera/mic denied: ' + e.message, 'err');
-      toast('❌ Allow camera & mic to connect');
-      setStatus('');
-    });
-}
-
-function disconnectViewer() {
-  if (currentCall) { currentCall.close(); currentCall = null; }
-  if (dataConn) { dataConn.close(); dataConn = null; }
-  document.getElementById('remoteVideo').srcObject = null;
-  stopMotionDetection();
-  stopVolumeMonitor();
-  stopRecording();
-  setStatus('');
-  document.getElementById('startRecBtn').disabled = true;
-  document.getElementById('disconnectBtn').disabled = true;
-  document.getElementById('correctBtn').disabled = true;
-  log('viewerLog', 'Disconnected', '');
-}
-
-// ── Bark Correction — Viewer side ──────────────────────────────────────────
-
-function sendCorrection() {
-  if (barkCooldown) { toast('⏳ Cooldown active'); return; }
-  if (!dataConn || !dataConn.open) { toast('⚠️ No command channel'); return; }
-
-  dataConn.send('CORRECT');
-  log('viewerLog', '🔔 Correction sent', 'bark');
-
-  const btn = document.getElementById('correctBtn');
-  btn.classList.add('firing');
-  setTimeout(() => btn.classList.remove('firing'), 400);
-
-  startCooldown();
-}
-
-function toggleAuto() {
-  autoModeOn = !autoModeOn;
-  const tog = document.getElementById('autoToggle');
-  tog.classList.toggle('on', autoModeOn);
-  log('viewerLog', 'Auto mode ' + (autoModeOn ? 'ON' : 'OFF'), autoModeOn ? 'ok' : '');
-  toast(autoModeOn ? '🤖 Auto correction ON' : '🤖 Auto correction OFF');
-}
-
-function startCooldown() {
-  barkCooldown = true;
-  const secs = parseInt(document.getElementById('cooldownSlider').value);
-  const fill = document.getElementById('cooldownFill');
-  let elapsed = 0;
-  clearInterval(cooldownTimerInterval);
-  fill.style.width = '100%';
-  cooldownTimerInterval = setInterval(() => {
-    elapsed += 100;
-    const pct = Math.max(0, 100 - (elapsed / (secs * 1000)) * 100);
-    fill.style.width = pct + '%';
-    if (elapsed >= secs * 1000) {
-      clearInterval(cooldownTimerInterval);
-      barkCooldown = false;
-      fill.style.width = '0%';
-    }
-  }, 100);
-}
-
-// ── Volume monitor (viewer analyses camera audio stream) ────────────────────
-function startVolumeMonitor(stream) {
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioContext.createMediaStreamSource(stream);
-    audioAnalyser = audioContext.createAnalyser();
-    audioAnalyser.fftSize = 256;
-    source.connect(audioAnalyser);
-    const dataArr = new Uint8Array(audioAnalyser.frequencyBinCount);
-
-    volInterval = setInterval(() => {
-      audioAnalyser.getByteFrequencyData(dataArr);
-      let sum = 0;
-      for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
-      const avg = sum / dataArr.length;
-      const pct = Math.min(100, (avg / 128) * 100);
-
-      const bar = document.getElementById('volBar');
-      bar.style.width = pct + '%';
-      bar.className = 'vol-bar' + (pct > 70 ? ' loud' : pct > 40 ? ' medium' : '');
-
-      // Auto-trigger
-      if (autoModeOn && !barkCooldown) {
-        const threshold = parseInt(document.getElementById('barkSlider').value);
-        if (pct > threshold) {
-          sendCorrection();
-          log('viewerLog', `⚡ Auto-triggered (vol ${Math.round(pct)}%)`, 'bark');
-        }
-      }
-    }, 150);
-  } catch (e) {
-    log('viewerLog', 'Audio monitor error: ' + e.message, 'err');
+      r.authed = true; r.retryMs = 0;
+      if (msg.name) setCamName(code, msg.name);
+      setCamState(code, msg.streaming ? 'waiting' : 'paused');
+      send(conn, { type: 'quality', level: focusCode === code ? 'high' : 'low' });
+      log('viewerLog', nameOf(code) + ': connected', 'ok');
+      break;
+    case 'ping': send(conn, { type: 'pong' }); break;
+    case 'streaming':
+      if (msg.on) setCamState(code, 'waiting');
+      else { clearVideo(code); setCamState(code, 'paused'); log('viewerLog', nameOf(code) + ': camera paused'); }
+      break;
+    case 'name': setCamName(code, msg.name); break;
   }
 }
 
-function stopVolumeMonitor() {
-  clearInterval(volInterval);
-  volInterval = null;
-  if (audioContext) { audioContext.close(); audioContext = null; }
-  audioAnalyser = null;
-  document.getElementById('volBar').style.width = '0%';
+function onCamCall(call) {
+  const m = String(call.peer).match(/^securecam-([A-Z0-9]{4})$/);
+  const code = m && m[1];
+  const r = code && rt[code];
+  if (!r || !r.authed) { try { call.close(); } catch (e) {} return; }
+  try { r.call && r.call.close(); } catch (e) {}
+  r.call = call;
+  call.answer();
+  call.on('stream', s => attachStream(code, s));
+  call.on('close', () => { if (r.call === call) r.call = null; });
+  const pc = call.peerConnection;
+  if (pc) pc.addEventListener('iceconnectionstatechange', () => {
+    if (pc.iceConnectionState === 'failed' && r.call === call) {
+      log('viewerLog', nameOf(code) + ': video link failed, retrying (a TURN relay in Settings helps)', 'err');
+      teardown(code); setCamState(code, 'offline'); scheduleRetry(code);
+    }
+  });
 }
 
-// ── Recording ──────────────────────────────────────────────────────────────
-let recChunks = [];
-let recStartTime;
+function attachStream(code, s) {
+  const r = rt[code];
+  if (!r || !r.video || r.video.srcObject === s) return;
+  r.video.srcObject = s;
+  r.video.muted = focusCode !== code || !!(r.talk && r.talk.on);
+  r.video.play().catch(() => { r.video.muted = true; r.video.play().catch(() => {}); });
+  r.stream = s;
+  setCamState(code, 'live');
+  attachAnalyser(code);
+  log('viewerLog', nameOf(code) + ': live', 'ok');
+}
+
+function setCamName(code, name) {
+  const c = cams.find(x => x.code === code); if (!c) return;
+  c.name = String(name).slice(0, 24); saveCams();
+  updateTile(code); renderCamList();
+  if (focusCode === code) updateFocusUI();
+}
+
+function setCamState(code, state) {
+  getRt(code).state = state;
+  updateTile(code); renderCamList(); updateHeader();
+}
+
+// ── Tiles ──────────────────────────────────────────────────────────────────
+function buildTile(code) {
+  const r = getRt(code);
+  if (r.tile) return r.tile;
+  const t = document.createElement('div'); t.className = 'tile';
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', '');
+  const lab = document.createElement('div'); lab.className = 'tile-label';
+  const st = document.createElement('div'); st.className = 'tile-state';
+  const meter = document.createElement('div'); meter.className = 'tile-meter';
+  t.append(v, lab, st, meter);
+  t.addEventListener('click', () => onTileTap(code));
+  Object.assign(r, { tile: t, video: v, labelEl: lab, stateEl: st, meterEl: meter });
+  updateTile(code);
+  return t;
+}
+
+function updateTile(code) {
+  const r = rt[code]; if (!r || !r.tile) return;
+  r.labelEl.textContent = nameOf(code);
+  r.stateEl.textContent = STATE_TEXT[r.state] || '';
+  r.tile.classList.toggle('live', r.state === 'live');
+}
+
+function renderTiles() {
+  const g = $('grid');
+  [...g.children].forEach(ch => { if (!cams.some(c => rt[c.code] && rt[c.code].tile === ch)) ch.remove(); });
+  cams.forEach(c => { const t = buildTile(c.code); if (t.parentNode !== g) g.appendChild(t); });
+  g.classList.toggle('one', cams.length === 1);
+  $('gridEmpty').style.display = cams.length ? 'none' : 'block';
+  $('gridHint').style.display = cams.length && !focusCode ? 'block' : 'none';
+}
+
+function onTileTap(code) {
+  unlockAudio();
+  const r = getRt(code);
+  if (['badpin', 'offline', 'locked'].includes(r.state)) {
+    if (r.state !== 'locked') { r.retryMs = 0; connectCam(code); toast('Retrying ' + nameOf(code) + '…'); }
+    return;
+  }
+  setFocus(focusCode === code ? null : code);
+}
+
+function setFocus(code) {
+  unlockAudio();
+  if (focusCode && focusCode !== code) { if (isRecording()) stopRecording(); stopTalk(focusCode); }
+  focusCode = code;
+  cams.forEach(c => {
+    const r = rt[c.code]; if (!r) return;
+    const f = c.code === code;
+    if (r.tile) r.tile.classList.toggle('focused', f);
+    if (r.video) { r.video.muted = !f; if (r.video.srcObject) r.video.play().catch(() => {}); }
+    if (r.conn && r.authed) send(r.conn, { type: 'quality', level: f ? 'high' : 'low' });
+  });
+  $('grid').classList.toggle('has-focus', !!code);
+  updateFocusUI();
+}
+
+function updateFocusUI() {
+  $('focusBar').style.display = focusCode ? 'block' : 'none';
+  $('gridHint').style.display = cams.length && !focusCode ? 'block' : 'none';
+  resetTalkBtn();
+  const rec = isRecording();
+  $('startRecBtn').disabled = rec; $('stopRecBtn').disabled = !rec;
+}
+
+// ── Camera list ────────────────────────────────────────────────────────────
+function renderCamList() {
+  const list = $('camList'); list.innerHTML = '';
+  if (!cams.length) {
+    const e = document.createElement('div'); e.className = 'cam-row-sub'; e.textContent = 'Open SecureCam on a camera phone, tap Start Cam, then add its code here.';
+    list.appendChild(e); return;
+  }
+  cams.forEach(c => {
+    const row = document.createElement('div'); row.className = 'cam-row';
+    const left = document.createElement('div');
+    const n = document.createElement('div'); n.className = 'cam-row-name'; n.textContent = c.name || c.code;
+    const s = document.createElement('div'); s.className = 'cam-row-sub';
+    const st = (rt[c.code] && rt[c.code].state) || 'offline';
+    s.textContent = c.code + '  ' + (st === 'live' ? 'Live' : STATE_TEXT[st]);
+    left.append(n, s);
+    const b = document.createElement('button'); b.className = 'btn small danger'; b.textContent = '✕';
+    b.onclick = () => removeCam(c.code);
+    row.append(left, b); list.appendChild(row);
+  });
+}
+
+function addCam() {
+  const code = $('addCode').value.trim().toUpperCase();
+  if (code.length !== 4 || [...code].some(ch => !CHARS.includes(ch))) { toast('Enter the 4-letter camera code'); return; }
+  if (cams.some(c => c.code === code)) { toast('Already added'); return; }
+  if (cams.length >= 6) { toast('Maximum 6 cameras'); return; }
+  cams.push({ code, name: code }); saveCams();
+  $('addCode').value = '';
+  renderTiles(); renderCamList(); updateHeader();
+  const r = getRt(code); r.retryMs = 0;
+  connectCam(code);
+  log('viewerLog', 'Added camera ' + code);
+}
+
+function removeCam(code) {
+  if (!confirm('Remove ' + nameOf(code) + '?')) return;
+  if (focusCode === code) setFocus(null);
+  teardown(code);
+  const r = rt[code];
+  if (r) { clearTimeout(r.retryTimer); if (r.tile) r.tile.remove(); delete rt[code]; }
+  cams = cams.filter(c => c.code !== code); saveCams();
+  renderTiles(); renderCamList(); updateHeader();
+}
+
+// ── Talk-back (hold to talk) ───────────────────────────────────────────────
+let talkHeld = false;
+async function talkDown(e) {
+  e.preventDefault();
+  const code = focusCode, r = code && rt[code];
+  if (!r || !r.authed) { toast('Camera not connected'); return; }
+  talkHeld = true;
+  try {
+    if (!r.talk) {
+      $('talkBtn').textContent = '🎙 CONNECTING MIC…';
+      const ms = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      if (focusCode !== code || !r.authed) { ms.getTracks().forEach(t => t.stop()); return; }
+      ms.getAudioTracks().forEach(t => t.enabled = false);
+      const call = viewPeer.call(PREFIX + code, ms, { metadata: { type: 'talk' } });
+      if (!call) { ms.getTracks().forEach(t => t.stop()); throw new Error('call failed'); }
+      r.talk = { call, stream: ms, on: false };
+      call.on('close', () => { if (r.talk && r.talk.call === call) stopTalk(code); });
+    }
+    setTalking(code, talkHeld);
+  } catch (err) {
+    log('viewerLog', 'Mic error: ' + err.message, 'err');
+    toast('Allow the microphone to talk');
+    talkHeld = false; resetTalkBtn();
+  }
+}
+function talkUp() { if (!talkHeld) return; talkHeld = false; if (focusCode) setTalking(focusCode, false); }
+function setTalking(code, on) {
+  const r = rt[code];
+  if (!r || !r.talk) { resetTalkBtn(); return; }
+  r.talk.on = on;
+  r.talk.stream.getAudioTracks().forEach(t => t.enabled = on);
+  if (r.video && focusCode === code) r.video.muted = on; // stops feedback while talking
+  send(r.conn, { type: 'talk', on });
+  resetTalkBtn();
+}
+function stopTalk(code) {
+  const r = rt[code]; if (!r || !r.talk) return;
+  const t = r.talk; r.talk = null;
+  try { t.call.close(); } catch (e) {}
+  t.stream.getTracks().forEach(tr => tr.stop());
+  send(r.conn, { type: 'talk', on: false });
+  if (r.video && focusCode === code) r.video.muted = false;
+  resetTalkBtn();
+}
+function resetTalkBtn() {
+  const r = focusCode && rt[focusCode];
+  const on = !!(r && r.talk && r.talk.on);
+  $('talkBtn').classList.toggle('on', on);
+  $('talkBtn').textContent = on ? '🎙 TALKING, RELEASE TO STOP' : '🎙 HOLD TO TALK';
+}
+const tb = $('talkBtn');
+tb.addEventListener('pointerdown', talkDown);
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => tb.addEventListener(ev, talkUp));
+tb.addEventListener('contextmenu', e => e.preventDefault());
+
+// ── Motion & sound alerts ──────────────────────────────────────────────────
+const mCanvas = document.createElement('canvas'); mCanvas.width = 80; mCanvas.height = 45;
+const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+
+setInterval(() => {
+  const threshold = 55 - +$('motionSlider').value;
+  for (const c of cams) {
+    const r = rt[c.code];
+    if (!r || !r.stream || !r.video || r.video.readyState < 2) continue;
+    try {
+      mCtx.drawImage(r.video, 0, 0, 80, 45);
+      const d = mCtx.getImageData(0, 0, 80, 45).data;
+      if (r.prev) {
+        let diff = 0;
+        for (let i = 0; i < d.length; i += 4) diff += Math.abs(d[i] - r.prev[i]);
+        if (diff / 3600 > threshold) flagAlert(c.code, 'motion');
+      }
+      r.prev = new Uint8ClampedArray(d);
+    } catch (e) {}
+  }
+}, 600);
+
+function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    cams.forEach(c => attachAnalyser(c.code));
+  } catch (e) {}
+}
+
+function attachAnalyser(code) {
+  const r = rt[code];
+  if (!audioCtx || !r || !r.stream || r.analyserStream === r.stream || !r.stream.getAudioTracks().length) return;
+  try {
+    const src = audioCtx.createMediaStreamSource(r.stream);
+    const an = audioCtx.createAnalyser(); an.fftSize = 512;
+    src.connect(an);
+    r.analyser = an; r.analyserStream = r.stream; r.abuf = new Uint8Array(an.fftSize);
+  } catch (e) {}
+}
+
+setInterval(() => {
+  const threshold = 60 - +$('soundSlider').value;
+  for (const c of cams) {
+    const r = rt[c.code];
+    if (!r || !r.analyser) continue;
+    r.analyser.getByteTimeDomainData(r.abuf);
+    let sum = 0;
+    for (let i = 0; i < r.abuf.length; i++) { const x = (r.abuf[i] - 128) / 128; sum += x * x; }
+    const level = Math.min(100, Math.sqrt(sum / r.abuf.length) * 300);
+    r.meterEl.style.width = level + '%';
+    if (level > threshold) flagAlert(c.code, 'sound');
+  }
+}, 200);
+
+function flagAlert(code, kind) {
+  const r = rt[code]; if (!r) return;
+  const key = kind + 'Cool';
+  if (r[key]) return;
+  r[key] = true;
+  r.tile.classList.add(kind);
+  log('viewerLog', (kind === 'motion' ? '⚠ Motion: ' : '🔊 Sound: ') + nameOf(code), 'err');
+  if (focusCode !== code) toast((kind === 'motion' ? '⚠️ Motion in ' : '🔊 Sound in ') + nameOf(code));
+  setTimeout(() => r.tile && r.tile.classList.remove(kind), 1500);
+  setTimeout(() => { r[key] = false; }, kind === 'motion' ? 4000 : 5000);
+}
+
+// ── Recording (enlarged camera) ────────────────────────────────────────────
+let mediaRecorder = null, recChunks = [], recStartTime = 0, recCode = null;
+const clips = [];
+function isRecording() { return !!(mediaRecorder && mediaRecorder.state !== 'inactive'); }
 
 function startRecording() {
-  const stream = document.getElementById('remoteVideo').srcObject;
-  if (!stream) { toast('No stream to record'); return; }
-
-  recChunks = [];
-  recStartTime = Date.now();
-
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9' : 'video/webm'
-  });
-
+  const r = focusCode && rt[focusCode];
+  if (!r || !r.stream) { toast('No video to record'); return; }
+  const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
+    .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+  if (!mime) { toast('Recording not supported here'); return; }
+  recChunks = []; recStartTime = Date.now(); recCode = focusCode;
+  mediaRecorder = new MediaRecorder(r.stream, { mimeType: mime });
   mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
-  mediaRecorder.onstop = saveClip;
+  mediaRecorder.onstop = () => saveClip(mime);
   mediaRecorder.start(1000);
-
-  document.getElementById('viewerRecBadge').classList.add('show');
-  document.getElementById('startRecBtn').disabled = true;
-  document.getElementById('stopRecBtn').disabled = false;
-  log('viewerLog', 'Recording started', 'ok');
-  toast('⏺ Recording...');
+  r.tile.classList.add('rec');
+  updateFocusUI();
+  log('viewerLog', 'Recording ' + nameOf(recCode), 'ok');
 }
 
 function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-  document.getElementById('viewerRecBadge').classList.remove('show');
-  document.getElementById('startRecBtn').disabled = false;
-  document.getElementById('stopRecBtn').disabled = true;
+  if (isRecording()) mediaRecorder.stop();
+  if (recCode && rt[recCode] && rt[recCode].tile) rt[recCode].tile.classList.remove('rec');
+  updateFocusUI();
 }
 
-function saveClip() {
-  const blob = new Blob(recChunks, { type: 'video/webm' });
-  const url = URL.createObjectURL(blob);
-  const duration = Math.round((Date.now() - recStartTime) / 1000);
-  const name = 'clip_' + nowStr() + '.webm';
-
-  clips.unshift({ name, url, duration, blob });
+function saveClip(mime) {
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  const blob = new Blob(recChunks, { type: mime.split(';')[0] });
+  const safe = nameOf(recCode).replace(/[^\w-]+/g, '_');
+  const name = 'clip_' + safe + '_' + nowStr() + '.' + ext;
+  clips.unshift({ name, url: URL.createObjectURL(blob), duration: Math.round((Date.now() - recStartTime) / 1000) });
   renderClips();
   log('viewerLog', 'Clip saved: ' + name, 'ok');
-  toast('💾 Clip saved');
+  toast('💾 Clip saved in Clips tab');
 }
 
 function renderClips() {
-  const list = document.getElementById('clipsList');
-  if (!clips.length) {
-    list.innerHTML = '<div class="empty-state">No recordings yet.<br>Connect as Viewer and hit Record.</div>';
-    return;
-  }
-  list.innerHTML = clips.map((c, i) => `
-    <div class="clip-item">
-      <div>
-        <div class="clip-name">${c.name}</div>
-        <div class="clip-meta">${c.duration}s</div>
-      </div>
-      <button class="clip-dl" onclick="downloadClip(${i})">⬇ SAVE</button>
-    </div>
-  `).join('');
+  const list = $('clipsList'); list.innerHTML = '';
+  if (!clips.length) { list.innerHTML = '<div class="empty-state">No recordings yet.<br>Enlarge a camera in Viewer and tap Record.</div>'; return; }
+  clips.forEach(c => {
+    const item = document.createElement('div'); item.className = 'clip-item';
+    const left = document.createElement('div');
+    const n = document.createElement('div'); n.className = 'clip-name'; n.textContent = c.name;
+    const m = document.createElement('div'); m.className = 'clip-meta'; m.textContent = c.duration + 's';
+    left.append(n, m);
+    const b = document.createElement('button'); b.className = 'btn small'; b.textContent = '⬇ SAVE';
+    b.onclick = () => { const a = document.createElement('a'); a.href = c.url; a.download = c.name; a.click(); };
+    item.append(left, b); list.appendChild(item);
+  });
 }
 
-function downloadClip(i) {
-  const c = clips[i];
-  const a = document.createElement('a');
-  a.href = c.url;
-  a.download = c.name;
-  a.click();
+// ── Settings: TURN ─────────────────────────────────────────────────────────
+function saveTurn() {
+  LS.set('sc_turn', $('turnInput').value.trim()); iceCache = null;
+  toast('Saved. Reload the app to use it');
 }
-
-// ── Motion detection ───────────────────────────────────────────────────────
-function startMotionDetection(stream) {
-  const video = document.getElementById('remoteVideo');
-  const canvas = document.getElementById('motionCanvas');
-  const ctx = canvas.getContext('2d');
-
-  motionInterval = setInterval(() => {
-    if (video.readyState < 2) return;
-    canvas.width = 160;
-    canvas.height = 90;
-    ctx.drawImage(video, 0, 0, 160, 90);
-    const imageData = ctx.getImageData(0, 0, 160, 90);
-    if (prevImageData) {
-      const threshold = parseInt(document.getElementById('motionSlider').value);
-      let diff = 0;
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        diff += Math.abs(imageData.data[i] - prevImageData.data[i]);
-      }
-      const avg = diff / (160 * 90);
-      if (avg > threshold) {
-        triggerMotion();
-      }
-    }
-    prevImageData = imageData;
-  }, 500);
-}
-
-function stopMotionDetection() {
-  clearInterval(motionInterval);
-  prevImageData = null;
-}
-
-let motionCooldown = false;
-function triggerMotion() {
-  if (motionCooldown) return;
-  motionCooldown = true;
-  const alert = document.getElementById('remoteMotionAlert');
-  alert.classList.add('active');
-  log('viewerLog', '⚠ Motion detected', 'err');
-  toast('⚠️ Motion detected!');
-  setTimeout(() => {
-    alert.classList.remove('active');
-    motionCooldown = false;
-  }, 2000);
+async function testTurn() {
+  LS.set('sc_turn', $('turnInput').value.trim()); iceCache = null;
+  const servers = await getIceServers();
+  const turns = servers.filter(s => [].concat(s.urls || s.url || []).some(u => String(u).startsWith('turn')));
+  toast(turns.length ? '✅ TURN OK: ' + turns.length + ' relay server(s)' : '❌ No TURN servers found');
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-initPeer();
+$('myCode').textContent = myCode;
+$('camName').value = myName;
+renderClips();
+log('camLog', 'Ready. Tap Start Cam to go live.');
+log('viewerLog', 'Ready.');
+setMode(LS.get('sc_mode', 'camera'));
+if (!PIN) requirePin();
+
+// If this phone was a live camera before a reload, resume automatically
+(async () => {
+  if (currentMode !== 'camera' || LS.get('sc_camActive') !== '1' || !PIN) return;
+  try {
+    const p = await navigator.permissions.query({ name: 'camera' });
+    if (p.state === 'granted') { log('camLog', 'Resuming camera after reload…'); startCamera(); }
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
