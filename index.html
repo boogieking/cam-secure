@@ -55,6 +55,8 @@
   .timestamp { position: absolute; bottom: 12px; left: 12px; font-family: var(--mono); font-size: 0.65rem; color: rgba(200,216,228,0.7); }
   .badge { position: absolute; top: 14px; right: 14px; background: rgba(57,255,106,0.9); color: #000; font-family: var(--mono); font-size: 0.65rem; padding: 3px 8px; border-radius: 3px; display: none; }
   .badge.show { display: block; }
+  .badge.left { left: 14px; right: auto; background: rgba(255,61,87,0.9); color: #fff; }
+  .mic-meter { position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--accent3); transition: width 0.15s; }
 
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
   .btn { padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -163,6 +165,8 @@
       <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
       <div class="corner corner-bl"></div><div class="corner corner-br"></div>
       <div class="badge" id="talkBadge">🔊 VIEWER TALKING</div>
+      <div class="badge left" id="camRecBadge">● REC</div>
+      <div class="mic-meter" id="micMeter"></div>
       <div class="timestamp" id="camTimestamp">--:--:--</div>
     </div>
   </div>
@@ -191,7 +195,19 @@
     <button class="btn" id="flipBtn" onclick="flipCamera()">⟳ FLIP</button>
     <button class="btn" id="dimBtn" onclick="dimScreen()">◐ DIM SCREEN</button>
   </div>
-  <p class="help">Keep Chrome open and the phone plugged in. The screen stays on while streaming; use Dim Screen to black it out and save battery.</p>
+  <p class="help">Keep Chrome open and the phone plugged in. The screen stays on while streaming; use Dim Screen to black it out and save battery. The green bar under the preview is this phone's microphone level.</p>
+
+  <div class="section-head">AUTO-RECORD</div>
+  <div class="info-card">
+    <button class="btn full" id="autoRecBtn" onclick="toggleAutoRec()">● AUTO-RECORD: OFF</button>
+    <div class="info-label" style="margin-top:14px">Clip length: <span id="clipLenLabel">30</span>s</div>
+    <div class="slider-row"><span>10s</span><input type="range" id="clipLen" min="10" max="120" step="10" value="30"><span>2m</span></div>
+    <div class="info-label" style="margin-top:14px">Motion sensitivity</div>
+    <div class="slider-row"><span>LESS</span><input type="range" id="camMotion" min="5" max="50" value="30"><span>MORE</span></div>
+    <div class="info-label" style="margin-top:14px">Sound sensitivity</div>
+    <div class="slider-row"><span>LESS</span><input type="range" id="camSound" min="5" max="55" value="30"><span>MORE</span></div>
+    <p class="help">When motion or sound is detected, this phone records a clip and saves it to its Downloads folder. If Chrome asks to allow multiple downloads, tap Allow.</p>
+  </div>
 
   <div class="section-head">ACTIVITY LOG</div>
   <div class="log" id="camLog"></div>
@@ -320,6 +336,32 @@ function send(conn, msg) { try { if (conn && conn.open) conn.send(msg); } catch 
 function nowStr() { return new Date().toISOString().replace('T', '_').substring(0, 19).replace(/:/g, '-'); }
 
 setInterval(() => { $('camTimestamp').textContent = ts(); }, 1000);
+
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+function levelOf(an, buf) {
+  an.getByteTimeDomainData(buf);
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) { const x = (buf[i] - 128) / 128; sum += x * x; }
+  return Math.min(100, Math.sqrt(sum / buf.length) * 300);
+}
+function pickMime() {
+  return ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
+    .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+}
+function safeFile(n) { return String(n).replace(/[^\w-]+/g, '_'); }
+
+// Remember slider positions on this phone
+['motionSlider', 'soundSlider', 'clipLen', 'camMotion', 'camSound'].forEach(id => {
+  const el = $(id); if (!el) return;
+  const v = LS.get('sc_' + id); if (v !== null) el.value = v;
+  el.addEventListener('input', () => { LS.set('sc_' + id, el.value); if (id === 'clipLen') $('clipLenLabel').textContent = el.value; });
+});
+$('clipLenLabel').textContent = $('clipLen').value;
 
 // ── ICE / TURN ─────────────────────────────────────────────────────────────
 let iceCache = null;
@@ -532,6 +574,9 @@ async function startCamera() {
     if (localStream) localStream.getTracks().forEach(t => t.stop());
     localStream = await navigator.mediaDevices.getUserMedia(camConstraints());
     $('localVideo').srcObject = localStream;
+    camStartedAt = Date.now(); camPrev = null;
+    attachCamAnalyser();
+    if (!localStream.getAudioTracks().length) log('camLog', 'No microphone track! Check Chrome mic permission for this site', 'err');
     $('startCamBtn').disabled = true; $('stopCamBtn').disabled = false;
     log('camLog', 'Camera started (' + facingMode + ')', 'ok');
     LS.set('sc_camActive', '1');
@@ -549,6 +594,7 @@ async function startCamera() {
 }
 
 function stopCamera() {
+  camRecChain = 99; if (camRec && camRec.state !== 'inactive') camRec.stop();
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
   $('localVideo').srcObject = null;
   for (const v of viewers.values()) { send(v.conn, { type: 'streaming', on: false }); try { v.call && v.call.close(); } catch (e) {} v.call = null; }
@@ -637,7 +683,7 @@ function newCode() {
 let viewPeer = null;
 let cams = LS.json('sc_cams', []).filter(c => c && c.code);
 const rt = {}; // per-camera runtime state
-let focusCode = null, audioCtx = null;
+let focusCode = null;
 const STATE_TEXT = {
   connecting: 'Connecting…', offline: 'Offline, retrying…', badpin: 'Wrong PIN. Tap to retry',
   locked: 'Camera locked for a few minutes', paused: 'Camera paused', waiting: 'Starting video…', live: ''
@@ -734,6 +780,7 @@ function clearVideo(code) {
   const r = rt[code]; if (!r) return;
   if (focusCode === code && isRecording()) stopRecording();
   if (r.video) r.video.srcObject = null;
+  if (r.audio) r.audio.srcObject = null;
   r.stream = null; r.analyser = null; r.analyserStream = null; r.prev = null;
   if (r.meterEl) r.meterEl.style.width = '0';
 }
@@ -764,6 +811,7 @@ function onCamMsg(code, conn, msg) {
       else { clearVideo(code); setCamState(code, 'paused'); log('viewerLog', nameOf(code) + ': camera paused'); }
       break;
     case 'name': setCamName(code, msg.name); break;
+    case 'event': log('viewerLog', nameOf(code) + ': recording clip (' + msg.kind + ')', 'err'); break;
   }
 }
 
@@ -774,7 +822,9 @@ function onCamCall(call) {
   if (!r || !r.authed) { try { call.close(); } catch (e) {} return; }
   try { r.call && r.call.close(); } catch (e) {}
   r.call = call;
-  call.answer();
+  let silent;
+  try { silent = getCtx().createMediaStreamDestination().stream; } catch (e) {}
+  call.answer(silent);
   call.on('stream', s => attachStream(code, s));
   call.on('close', () => { if (r.call === call) r.call = null; });
   const pc = call.peerConnection;
@@ -790,12 +840,31 @@ function attachStream(code, s) {
   const r = rt[code];
   if (!r || !r.video || r.video.srcObject === s) return;
   r.video.srcObject = s;
-  r.video.muted = focusCode !== code || !!(r.talk && r.talk.on);
-  r.video.play().catch(() => { r.video.muted = true; r.video.play().catch(() => {}); });
+  r.video.muted = true; // sound plays through a separate audio player
+  r.video.play().catch(() => {});
   r.stream = s;
   setCamState(code, 'live');
-  attachAnalyser(code);
   log('viewerLog', nameOf(code) + ': live', 'ok');
+  s.addEventListener('addtrack', () => setupAudio(code));
+  setupAudio(code);
+  setTimeout(() => { if (r.stream === s) setupAudio(code, true); }, 3000);
+}
+
+function setupAudio(code, report) {
+  const r = rt[code]; if (!r || !r.stream) return;
+  const at = r.stream.getAudioTracks();
+  if (!r.audio) { r.audio = document.createElement('audio'); r.audio.autoplay = true; r.audio.setAttribute('playsinline', ''); document.body.appendChild(r.audio); }
+  if (at.length && (!r.audio.srcObject || r.audio.srcObject.getAudioTracks()[0] !== at[0])) {
+    r.audio.srcObject = new MediaStream(at);
+    at[0].addEventListener('unmute', () => log('viewerLog', nameOf(code) + ': sound arriving', 'ok'));
+  }
+  r.audio.muted = focusCode !== code || !!(r.talk && r.talk.on);
+  if (r.audio.srcObject) r.audio.play().catch(() => {});
+  attachAnalyser(code);
+  if (report) {
+    if (!at.length) log('viewerLog', nameOf(code) + ': NO audio in stream. Check mic permission on that camera phone', 'err');
+    else log('viewerLog', nameOf(code) + ': audio ' + at[0].readyState + (at[0].muted ? ', no sound data yet' : ', receiving'), at[0].muted ? 'err' : 'ok');
+  }
 }
 
 function setCamName(code, name) {
@@ -860,7 +929,8 @@ function setFocus(code) {
     const r = rt[c.code]; if (!r) return;
     const f = c.code === code;
     if (r.tile) r.tile.classList.toggle('focused', f);
-    if (r.video) { r.video.muted = !f; if (r.video.srcObject) r.video.play().catch(() => {}); }
+    if (r.video && r.video.srcObject) r.video.play().catch(() => {});
+    if (r.audio) { r.audio.muted = !f; if (r.audio.srcObject) r.audio.play().catch(() => {}); }
     if (r.conn && r.authed) send(r.conn, { type: 'quality', level: f ? 'high' : 'low' });
   });
   $('grid').classList.toggle('has-focus', !!code);
@@ -914,7 +984,7 @@ function removeCam(code) {
   if (focusCode === code) setFocus(null);
   teardown(code);
   const r = rt[code];
-  if (r) { clearTimeout(r.retryTimer); if (r.tile) r.tile.remove(); delete rt[code]; }
+  if (r) { clearTimeout(r.retryTimer); if (r.tile) r.tile.remove(); if (r.audio) r.audio.remove(); delete rt[code]; }
   cams = cams.filter(c => c.code !== code); saveCams();
   renderTiles(); renderCamList(); updateHeader();
 }
@@ -950,7 +1020,7 @@ function setTalking(code, on) {
   if (!r || !r.talk) { resetTalkBtn(); return; }
   r.talk.on = on;
   r.talk.stream.getAudioTracks().forEach(t => t.enabled = on);
-  if (r.video && focusCode === code) r.video.muted = on; // stops feedback while talking
+  if (r.audio && focusCode === code) r.audio.muted = on; // stops feedback while talking
   send(r.conn, { type: 'talk', on });
   resetTalkBtn();
 }
@@ -960,7 +1030,7 @@ function stopTalk(code) {
   try { t.call.close(); } catch (e) {}
   t.stream.getTracks().forEach(tr => tr.stop());
   send(r.conn, { type: 'talk', on: false });
-  if (r.video && focusCode === code) r.video.muted = false;
+  if (r.audio && focusCode === code) r.audio.muted = false;
   resetTalkBtn();
 }
 function resetTalkBtn() {
@@ -998,9 +1068,9 @@ setInterval(() => {
 
 function unlockAudio() {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    cams.forEach(c => attachAnalyser(c.code));
+    getCtx();
+    attachCamAnalyser();
+    cams.forEach(c => { attachAnalyser(c.code); const r = rt[c.code]; if (r && r.audio && r.audio.srcObject) r.audio.play().catch(() => {}); });
   } catch (e) {}
 }
 
@@ -1008,7 +1078,7 @@ function attachAnalyser(code) {
   const r = rt[code];
   if (!audioCtx || !r || !r.stream || r.analyserStream === r.stream || !r.stream.getAudioTracks().length) return;
   try {
-    const src = audioCtx.createMediaStreamSource(r.stream);
+    const src = audioCtx.createMediaStreamSource(new MediaStream(r.stream.getAudioTracks()));
     const an = audioCtx.createAnalyser(); an.fftSize = 512;
     src.connect(an);
     r.analyser = an; r.analyserStream = r.stream; r.abuf = new Uint8Array(an.fftSize);
@@ -1020,10 +1090,7 @@ setInterval(() => {
   for (const c of cams) {
     const r = rt[c.code];
     if (!r || !r.analyser) continue;
-    r.analyser.getByteTimeDomainData(r.abuf);
-    let sum = 0;
-    for (let i = 0; i < r.abuf.length; i++) { const x = (r.abuf[i] - 128) / 128; sum += x * x; }
-    const level = Math.min(100, Math.sqrt(sum / r.abuf.length) * 300);
+    const level = levelOf(r.analyser, r.abuf);
     r.meterEl.style.width = level + '%';
     if (level > threshold) flagAlert(c.code, 'sound');
   }
@@ -1049,8 +1116,7 @@ function isRecording() { return !!(mediaRecorder && mediaRecorder.state !== 'ina
 function startRecording() {
   const r = focusCode && rt[focusCode];
   if (!r || !r.stream) { toast('No video to record'); return; }
-  const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
-    .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+  const mime = pickMime();
   if (!mime) { toast('Recording not supported here'); return; }
   recChunks = []; recStartTime = Date.now(); recCode = focusCode;
   mediaRecorder = new MediaRecorder(r.stream, { mimeType: mime });
@@ -1071,10 +1137,9 @@ function stopRecording() {
 function saveClip(mime) {
   const ext = mime.includes('mp4') ? 'mp4' : 'webm';
   const blob = new Blob(recChunks, { type: mime.split(';')[0] });
-  const safe = nameOf(recCode).replace(/[^\w-]+/g, '_');
+  const safe = safeFile(nameOf(recCode));
   const name = 'clip_' + safe + '_' + nowStr() + '.' + ext;
-  clips.unshift({ name, url: URL.createObjectURL(blob), duration: Math.round((Date.now() - recStartTime) / 1000) });
-  renderClips();
+  addClip({ name, url: URL.createObjectURL(blob), duration: Math.round((Date.now() - recStartTime) / 1000) });
   log('viewerLog', 'Clip saved: ' + name, 'ok');
   toast('💾 Clip saved in Clips tab');
 }
@@ -1094,6 +1159,107 @@ function renderClips() {
   });
 }
 
+function addClip(c) {
+  clips.unshift(c);
+  while (clips.length > 20) { const old = clips.pop(); try { URL.revokeObjectURL(old.url); } catch (e) {} }
+  renderClips();
+}
+
+// ── Camera-side mic meter, detection & auto-record ─────────────────────────
+let camAnalyser = null, camAnalyserStream = null, camBuf = null, camPrev = null, camStartedAt = 0;
+let autoRec = LS.get('sc_autorec', '0') === '1';
+let camRec = null, camRecChain = 0, camRecExtend = false, camRecTimer = null;
+const cCanvas = document.createElement('canvas'); cCanvas.width = 80; cCanvas.height = 45;
+const cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
+
+function attachCamAnalyser() {
+  if (!localStream || camAnalyserStream === localStream || !localStream.getAudioTracks().length) return;
+  try {
+    const ctx = getCtx();
+    const src = ctx.createMediaStreamSource(new MediaStream(localStream.getAudioTracks()));
+    const an = ctx.createAnalyser(); an.fftSize = 512; src.connect(an);
+    camAnalyser = an; camAnalyserStream = localStream; camBuf = new Uint8Array(an.fftSize);
+  } catch (e) { log('camLog', 'Mic meter error: ' + e.message, 'err'); }
+}
+
+setInterval(() => {
+  if (!localStream || !camAnalyser) { $('micMeter').style.width = '0'; return; }
+  const level = levelOf(camAnalyser, camBuf);
+  $('micMeter').style.width = level + '%';
+  const talking = [...viewers.values()].some(v => v.talking);
+  if (!talking && level > 60 - +$('camSound').value) triggerCamRec('sound');
+}, 200);
+
+setInterval(() => {
+  const v = $('localVideo');
+  if (!autoRec || !localStream || v.readyState < 2) { camPrev = null; return; }
+  try {
+    cCtx.drawImage(v, 0, 0, 80, 45);
+    const d = cCtx.getImageData(0, 0, 80, 45).data;
+    if (camPrev) {
+      let diff = 0;
+      for (let i = 0; i < d.length; i += 4) diff += Math.abs(d[i] - camPrev[i]);
+      if (diff / 3600 > 55 - +$('camMotion').value) triggerCamRec('motion');
+    }
+    camPrev = new Uint8ClampedArray(d);
+  } catch (e) {}
+}, 600);
+
+function triggerCamRec(reason) {
+  if (!autoRec || !localStream || Date.now() - camStartedAt < 4000) return;
+  if (camRec && camRec.state !== 'inactive') { camRecExtend = true; return; }
+  camRecChain = 0;
+  startCamRec(reason);
+}
+
+function startCamRec(reason) {
+  const mime = pickMime();
+  if (!mime) { log('camLog', 'Recording not supported on this phone', 'err'); autoRec = false; updateAutoRecUI(); return; }
+  const chunks = [], started = Date.now();
+  let rec;
+  try { rec = new MediaRecorder(localStream, { mimeType: mime, videoBitsPerSecond: 1500000 }); }
+  catch (e) { log('camLog', 'Recorder error: ' + e.message, 'err'); return; }
+  camRec = rec; camRecExtend = false;
+  rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  rec.onstop = () => {
+    $('camRecBadge').classList.remove('show');
+    saveCamClip(chunks, mime, reason, started);
+    // Keep recording in back-to-back clips while activity continues (max 5 in a row)
+    if (camRecExtend && autoRec && localStream && camRecChain < 4) { camRecChain++; startCamRec('continued'); }
+  };
+  rec.start(1000);
+  $('camRecBadge').classList.add('show');
+  log('camLog', 'Recording clip (' + reason + ')', 'ok');
+  for (const v of viewers.values()) send(v.conn, { type: 'event', kind: reason });
+  clearTimeout(camRecTimer);
+  camRecTimer = setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, +$('clipLen').value * 1000);
+}
+
+function saveCamClip(chunks, mime, reason, started) {
+  if (!chunks.length) return;
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  const blob = new Blob(chunks, { type: mime.split(';')[0] });
+  const name = 'securecam_' + safeFile(myName) + '_' + nowStr() + '_' + reason + '.' + ext;
+  const url = URL.createObjectURL(blob);
+  addClip({ name, url, duration: Math.round((Date.now() - started) / 1000) });
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  log('camLog', 'Saved to Downloads: ' + name, 'ok');
+}
+
+function toggleAutoRec() {
+  autoRec = !autoRec; LS.set('sc_autorec', autoRec ? '1' : '0');
+  if (!autoRec && camRec && camRec.state !== 'inactive') { camRecChain = 99; camRec.stop(); }
+  updateAutoRecUI();
+  toast(autoRec ? (localStream ? '● Auto-record on' : '● Auto-record will run once the camera is live') : 'Auto-record off');
+}
+function updateAutoRecUI() {
+  const b = $('autoRecBtn');
+  b.textContent = autoRec ? '● AUTO-RECORD: ON' : '○ AUTO-RECORD: OFF';
+  b.classList.toggle('success', autoRec);
+  b.style.color = autoRec ? 'var(--accent3)' : '';
+}
+
 // ── Settings: TURN ─────────────────────────────────────────────────────────
 function saveTurn() {
   LS.set('sc_turn', $('turnInput').value.trim()); iceCache = null;
@@ -1110,6 +1276,7 @@ async function testTurn() {
 $('myCode').textContent = myCode;
 $('camName').value = myName;
 renderClips();
+updateAutoRecUI();
 log('camLog', 'Ready. Tap Start Cam to go live.');
 log('viewerLog', 'Ready.');
 setMode(LS.get('sc_mode', 'camera'));
